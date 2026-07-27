@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<title>Hisobot baza</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif; }
+  button { font-family: inherit; }
+  input, select { font-family: inherit; }
+  ::-webkit-scrollbar { height: 8px; width: 8px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect, useRef } = React;
+
+/* ---------------- i18n ---------------- */
+const DICT = {
+  uz: {
+    company: "Hisobot baza", subtitle: "Buxgalteriya paneli",
+    welcome: "Xush kelibsiz", dashboard: "Dashboard", sotuv: "Sotuv", tahlil: "Tahlil",
+    xabarlar: "Xabarlar", otkazmalar: "Bank", mijozlar: "Mijozlar",
+    xodimlar: "Xodimlar", kirim: "Kirim", ombor: "Ombor", xarajatlar: "Xarajatlar",
+    sozlamalar: "Sozlamalar",
+    googleSheets: "Google Sheets bilan ulash", ulash: "Ulash", ulandi: "Ulandi",
+    excelTanlash: "Excel faylni tanlash", saqlash: "Saqlash", saqlandi: "Saqlandi",
+    hujjatYuklash: "Hujjat yuklash", yangiXodim: "+ Yangi hodim qo'shish",
+    xodimniOlish: "+ Xodimni ishdan olish", qoshish: "+ Qo'shish",
+    fio: "F.I.O", lavozim: "Lavozim", stafka: "Stafka", oylikMaosh: "Oylik maosh",
+    kirganSana: "Ishga kirgan sana", ketganSana: "Ishdan ketgan sana", komment: "Komentariya",
+    ism: "Ism/Tashkilot", inn: "Inn/Jshshr", manzil: "Manzil", izoh: "Izoh",
+    no: "№", sana: "Sana", hamkor: "Hamkor", hisobRaqam: "Bank xisob raqam", mfo: "MFO",
+    chiqim: "Chiqim", kirimSoz: "Kirim",
+    mahsulotXizmat: "Mahsulot/Xizmat", miqdor: "Miqdor", sotishNarxi: "Sotish narxi (QQS)",
+    jamiSumma: "Jami summa", tolovTuri: "Tolov turi",
+    narx: "Narx", qqs12: "QQS 12%", narxQqs: "Narx (QQS)",
+    jamiKirim: "Jami kirim", sotildi: "Sotildi", qoldiq: "Qoldiq", mahsulot: "Mahsulot",
+    xarajatNomi: "Xarajat nomi", miqdori: "Miqdori", narxi: "Narxi",
+    umumiyBalans: "Umumiy balans", sofFoyda: "Sof foyda", qarzdorlik: "Qarzdorlik",
+    xarajatToifalari: "Xarajat toifalari", songiOtkazmalar: "So'ngi o'tkazmalar",
+    yil: "Yil", oy: "Oy", barchasi: "Barchasi",
+    til: "Interfeys tili", uzbek: "O'zbek tili", rus: "Rus tili",
+    korinish: "Ko'rinish", yorugRejim: "Yorug' rejim", tunRejim: "Tun rejim",
+    naxt: "Naxt", bank: "Bank", qarz: "Qarz",
+    oylikOsish: "Oylik o'sish dinamikasi", tolovTaqsimoti: "To'lov turlari taqsimoti",
+    oqilmagan: "O'qilmagan", oqilgan: "O'qilgan",
+    bekorQilish: "Bekor qilish",
+    fayl: "Fayl", faylYuklandi: "yuklandi", tanlanganFaylYoq: "Fayl tanlanmagan",
+    faolXodim: "Faol xodim", yangilash: "Yangilash", yangilandi: "Ma'lumotlar yangilandi",
+    kun: "Kun", tahrirlash: "Tahrirlash", amal: "Amal",
+    qatorQoshildi: "qator qo'shildi", malumotYoq: "Faylda mos ma'lumot topilmadi", faylXato: "Faylni o'qishda xatolik yuz berdi",
+    xabarYangiMijoz: "Yangi mijoz qo'shildi:", xabarYangiXodim: "Yangi xodim qo'shildi:",
+    xabarXodimBoshatildi: "Xodim ishdan bo'shatildi:", xabarYangiOtkazma: "Yangi o'tkazma:",
+    tozalash: "Ma'lumotlarni tozalash", tozalashTasdiq: "Barcha ma'lumotlar butunlay o'chiriladi. Davom etasizmi?",
+    tozalandi: "Ma'lumotlar tozalandi", tartibHint: "Bo'limlarni sudrab (ushlab) tartibini o'zgartirishingiz mumkin",
+    kassa: "Kassa", boshlangichQoldiq: "Boshlang'ich qoldiq", jamiChiqim: "Jami chiqim",
+    joriyQoldiq: "Joriy kassa qoldig'i", qarzYopish: "Qarzni naqd yopish", kassadanBank: "Bank hisobiga o'tkazish",
+    yangiOperatsiya: "Yangi operatsiya", turi: "Turi", summa: "Summa",
+    tanlash: "Tanlash", tanlanganlarniOchirish: "O'chirish", ochirishTasdiq: "Tanlangan yozuvlar o'chirilsinmi?",
+    hamkorTanlang: "Hamkorni tanlang", mahsulotTanlang: "Mahsulotni tanlang", mijozYoq: "Avval mijoz qo'shing",
+    kirimYoq: "Avval Kirim bo'limiga mahsulot qo'shing", kassaOperatsiyalari: "Kassa operatsiyalari",
+    izohIxtiyoriy: "Izoh (ixtiyoriy)", ochirildi: "O'chirildi",
+    holat: "Holat", pulgaOlingan: "Pulga olingan", qarzgaOlingan: "Qarzga olingan", toldi: "To'landi",
+    qarzTolandi: "Qarz to'liq to'landi", bizningQarzlarimiz: "Bizning qarzlarimiz", hamkorQarzlari: "Hamkorlarning qarzlari",
+    kassaHisobi: "Kassa hisobi", bankHisobi: "Bank (O'tkazmalar) hisobi",
+    sotuvlarTahlili: "Sotuvlar tahlili", kunlikSotuv: "Kunlik sotuv", oylikSotuv: "Oylik sotuv", yillikSotuv: "Yillik sotuv",
+    kopSotilgan: "Eng ko'p sotilgan mahsulotlar", kopSavdoXodim: "Eng ko'p savdo qilgan xodim", sotuvGrafigi: "Sotuvlar grafigi", sotuvchi: "Sotuvchi",
+    telefon: "Telefon raqami", xodimManzil: "Yashash manzili", jinsi: "Jinsi", erkak: "Erkak", ayol: "Ayol",
+    oylikFondi: "Jami oylik fondi",
+    tashkilot: "Tashkilot", tashkilotNomi: "Tashkilot nomi", stir: "STIR", mfoOrg: "MFO", hisobRaqamOrg: "Hisob raqami",
+    bankNomi: "Bank nomi", orgInn: "INN/STIR", oked: "OKED", manzilOrg: "Manzil", telefonOrg: "Telefon", emailOrg: "Email",
+    rahbar: "Rahbar F.I.O.", boshHisobchi: "Bosh hisobchi F.I.O.",
+    login: "Login", parol: "Parol", parolTasdiqla: "Parolni tasdiqlang", kirish: "Kirish", chiqish: "Chiqish",
+    royxatdanOtish: "Ro'yxatdan o'tish", hisobYarating: "Birinchi marta? Admin hisobini yarating", parolMos: "Parollar mos kelmadi",
+    loginXato: "Login yoki parol xato", maydonTold: "Barcha maydonlarni to'ldiring",
+    mijozdanYigish: "Mijozdan qarz yig'ish",
+    parolXato: "Parol noto'g'ri",
+    tanlanganDavrSotuv: "Tanlangan davr bo'yicha sotuv",
+    kimgaToifa: "Kimga to'lov qilinmoqda?", mijoz: "Mijoz",
+    kassaYetarliEmas: "Kassada mablag' yetarli emas.", bankYetarliEmas: "Bank hisobida mablag' yetarli emas.",
+  },
+  ru: {
+    company: "База отчётов", subtitle: "Панель бухгалтерии",
+    welcome: "Добро пожаловать", dashboard: "Дашборд", sotuv: "Продажи", tahlil: "Анализ",
+    xabarlar: "Сообщения", otkazmalar: "Банк", mijozlar: "Клиенты",
+    xodimlar: "Сотрудники", kirim: "Приход", ombor: "Склад", xarajatlar: "Расходы",
+    sozlamalar: "Настройки",
+    googleSheets: "Подключить Google Sheets", ulash: "Подключить", ulandi: "Подключено",
+    excelTanlash: "Выбрать Excel файл", saqlash: "Сохранить", saqlandi: "Сохранено",
+    hujjatYuklash: "Загрузить документ", yangiXodim: "+ Добавить сотрудника",
+    xodimniOlish: "+ Уволить сотрудника", qoshish: "+ Добавить",
+    fio: "Ф.И.О", lavozim: "Должность", stafka: "Ставка", oylikMaosh: "Оклад",
+    kirganSana: "Дата приёма", ketganSana: "Дата увольнения", komment: "Комментарий",
+    ism: "Имя/Организация", inn: "ИНН/ПИНФЛ", manzil: "Адрес", izoh: "Примечание",
+    no: "№", sana: "Дата", hamkor: "Партнёр", hisobRaqam: "Р/с банка", mfo: "МФО",
+    chiqim: "Расход", kirimSoz: "Приход",
+    mahsulotXizmat: "Товар/услуга", miqdor: "Кол-во", sotishNarxi: "Цена продажи (НДС)",
+    jamiSumma: "Итого сумма", tolovTuri: "Тип оплаты",
+    narx: "Цена", qqs12: "НДС 12%", narxQqs: "Цена (НДС)",
+    jamiKirim: "Всего приход", sotildi: "Продано", qoldiq: "Остаток", mahsulot: "Товар",
+    xarajatNomi: "Наименование расхода", miqdori: "Количество", narxi: "Цена",
+    umumiyBalans: "Общий баланс", sofFoyda: "Чистая прибыль", qarzdorlik: "Задолженность",
+    xarajatToifalari: "Категории расходов", songiOtkazmalar: "Последние переводы",
+    yil: "Год", oy: "Месяц", barchasi: "Все",
+    til: "Язык интерфейса", uzbek: "Узбекский язык", rus: "Русский язык",
+    korinish: "Вид", yorugRejim: "Светлый режим", tunRejim: "Тёмный режим",
+    naxt: "Наличные", bank: "Банк", qarz: "Долг",
+    oylikOsish: "Динамика роста по месяцам", tolovTaqsimoti: "Распределение типов оплаты",
+    oqilmagan: "Непрочитано", oqilgan: "Прочитано",
+    bekorQilish: "Отмена",
+    fayl: "Файл", faylYuklandi: "загружен", tanlanganFaylYoq: "Файл не выбран",
+    faolXodim: "Активный сотрудник", yangilash: "Обновить", yangilandi: "Данные обновлены",
+    kun: "День", tahrirlash: "Редактировать", amal: "Действие",
+    qatorQoshildi: "строк добавлено", malumotYoq: "В файле нет подходящих данных", faylXato: "Ошибка при чтении файла",
+    xabarYangiMijoz: "Добавлен новый клиент:", xabarYangiXodim: "Добавлен новый сотрудник:",
+    xabarXodimBoshatildi: "Сотрудник уволен:", xabarYangiOtkazma: "Новый перевод:",
+    tozalash: "Очистить данные", tozalashTasdiq: "Все данные будут полностью удалены. Продолжить?",
+    tozalandi: "Данные очищены", tartibHint: "Разделы можно перетаскивать для изменения порядка",
+    kassa: "Касса", boshlangichQoldiq: "Начальный остаток", jamiChiqim: "Всего расход",
+    joriyQoldiq: "Текущий остаток кассы", qarzYopish: "Погашение долга наличными", kassadanBank: "Перевод на банковский счёт",
+    yangiOperatsiya: "Новая операция", turi: "Тип", summa: "Сумма",
+    tanlash: "Выбрать", tanlanganlarniOchirish: "Удалить", ochirishTasdiq: "Удалить выбранные записи?",
+    hamkorTanlang: "Выберите партнёра", mahsulotTanlang: "Выберите товар", mijozYoq: "Сначала добавьте клиента",
+    kirimYoq: "Сначала добавьте товар в раздел Приход", kassaOperatsiyalari: "Операции кассы",
+    izohIxtiyoriy: "Комментарий (необязательно)", ochirildi: "Удалено",
+    holat: "Статус", pulgaOlingan: "Оплачено", qarzgaOlingan: "В долг", toldi: "Оплачено полностью",
+    qarzTolandi: "Долг полностью погашен", bizningQarzlarimiz: "Наши долги", hamkorQarzlari: "Долги партнёров",
+    kassaHisobi: "Счёт кассы", bankHisobi: "Счёт (переводы) в банке",
+    sotuvlarTahlili: "Анализ продаж", kunlikSotuv: "Продажи за день", oylikSotuv: "Продажи за месяц", yillikSotuv: "Продажи за год",
+    kopSotilgan: "Самые продаваемые товары", kopSavdoXodim: "Лучший продавец", sotuvGrafigi: "График продаж", sotuvchi: "Продавец",
+    telefon: "Номер телефона", xodimManzil: "Место жительства", jinsi: "Пол", erkak: "Мужской", ayol: "Женский",
+    oylikFondi: "Общий фонд зарплаты",
+    tashkilot: "Организация", tashkilotNomi: "Название организации", stir: "СТИР", mfoOrg: "МФО", hisobRaqamOrg: "Расчётный счёт",
+    bankNomi: "Название банка", orgInn: "ИНН/СТИР", oked: "ОКЭД", manzilOrg: "Адрес", telefonOrg: "Телефон", emailOrg: "Email",
+    rahbar: "Ф.И.О. руководителя", boshHisobchi: "Ф.И.О. главного бухгалтера",
+    login: "Логин", parol: "Пароль", parolTasdiqla: "Подтвердите пароль", kirish: "Войти", chiqish: "Выйти",
+    royxatdanOtish: "Регистрация", hisobYarating: "Впервые? Создайте аккаунт администратора", parolMos: "Пароли не совпадают",
+    loginXato: "Неверный логин или пароль", maydonTold: "Заполните все поля",
+    mijozdanYigish: "Взыскать долг с клиента",
+    parolXato: "Неверный пароль",
+    tanlanganDavrSotuv: "Продажи за выбранный период",
+    kimgaToifa: "Кому производится оплата?", mijoz: "Клиент",
+    kassaYetarliEmas: "Недостаточно средств в кассе.", bankYetarliEmas: "Недостаточно средств на банковском счёте.",
+  },
+};
+
+const MONTHS_UZ = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+const MONTHS_RU = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const fmt = (n) => Math.round(Number(n || 0)).toLocaleString("ru-RU");
+
+const LIGHT = {
+  page: "#F4F2EC", card: "#FFFFFF", border: "#E7E4DA", borderSoft: "#F0EEE6",
+  text: "#26241F", textSecondary: "#78766E", sidebar: "#FFFFFF",
+  navActiveBg: "#EAF1FB", navActiveText: "#185FA5",
+  green: "#0F6E56", red: "#993C1D", blue: "#185FA5", amber: "#854F0B",
+  inputBg: "#FFFFFF",
+};
+const DARK = {
+  page: "#17171A", card: "#232327", border: "#34343A", borderSoft: "#2B2B30",
+  text: "#EDEDEE", textSecondary: "#A2A1A8", sidebar: "#1D1D21",
+  navActiveBg: "#1E2E42", navActiveText: "#6CA9EE",
+  green: "#39B98B", red: "#E08A6B", blue: "#6CA9EE", amber: "#E3B15C",
+  inputBg: "#2A2A2F",
+};
+
+const seedSales = [
+  { id: 1, sana: "2026-05-04", nomi: "Kabel 3x2.5", miqdor: 120, narx: 8500, tolov: "Naxt", xodim: "Aliyev Bekzod", hamkor: "-" },
+  { id: 2, sana: "2026-05-11", nomi: "Avtomat vyklyuchatel", miqdor: 40, narx: 32000, tolov: "Bank", xodim: "Aliyev Bekzod", hamkor: "-" },
+  { id: 3, sana: "2026-06-02", nomi: "Rozetka blok", miqdor: 60, narx: 15000, tolov: "Bank", xodim: "Karimova Nodira", hamkor: "-" },
+  { id: 4, sana: "2026-06-19", nomi: "Svetilnik LED", miqdor: 25, narx: 78000, tolov: "Naxt", xodim: "Aliyev Bekzod", hamkor: "-" },
+  { id: 5, sana: "2026-07-03", nomi: "Kabel kanal", miqdor: 200, narx: 6200, tolov: "Bank", xodim: "Karimova Nodira", hamkor: "-" },
+  { id: 6, sana: "2026-07-15", nomi: "Montaj xizmati", miqdor: 1, narx: 1250000, tolov: "Naxt", xodim: "Aliyev Bekzod", hamkor: "-" },
+];
+const seedIncome = [
+  { id: 1, sana: "2026-05-02", nomi: "Kabel 3x2.5", hamkor: "ElectroTrade", miqdor: 500, narx: 7200, tolov: "Bank", holat: "Pulga olingan" },
+  { id: 2, sana: "2026-06-01", nomi: "Rozetka blok", hamkor: "UzElectro MChJ", miqdor: 200, narx: 12000, tolov: "Bank", holat: "Qarzga olingan" },
+  { id: 3, sana: "2026-07-05", nomi: "Svetilnik LED", hamkor: "LightPro", miqdor: 80, narx: 65000, tolov: "Bank", holat: "Pulga olingan" },
+];
+const seedWarehouse = [
+  { id: 1, mahsulot: "Kabel 3x2.5", jamiKirim: 500, sotildi: 120 },
+  { id: 2, mahsulot: "Rozetka blok", jamiKirim: 200, sotildi: 60 },
+  { id: 3, mahsulot: "Svetilnik LED", jamiKirim: 80, sotildi: 25 },
+];
+const seedExpenses = [
+  { id: 1, sana: "2026-06-05", nomi: "Ofis ijarasi", miqdor: 1, narx: 4500000, izoh: "Iyun oyi", hisob: "Bank" },
+  { id: 2, sana: "2026-07-02", nomi: "Transport xarajati", miqdor: 1, narx: 1200000, izoh: "", hisob: "Naxt" },
+  { id: 3, sana: "2026-07-10", nomi: "Kommunal to'lovlar", miqdor: 1, narx: 850000, izoh: "", hisob: "Bank" },
+];
+const seedEmployees = [
+  { id: 1, fio: "Aliyev Bekzod", lavozim: "Menejer", telefon: "+998 90 123 45 67", manzil: "Toshkent sh., Chilonzor t.", jins: "Erkak", oylik: 6500000 },
+  { id: 2, fio: "Karimova Nodira", lavozim: "Buxgalter", telefon: "+998 91 234 56 78", manzil: "Toshkent sh., Yunusobod t.", jins: "Ayol", oylik: 7000000 },
+];
+const seedClients = [
+  { id: 1, ism: "ElectroTrade", inn: "302145698", manzil: "Toshkent, Chilonzor", izoh: "Doimiy hamkor" },
+  { id: 2, ism: "UzElectro MChJ", inn: "301987654", manzil: "Toshkent, Yunusobod", izoh: "" },
+];
+const seedTransfers = [
+  { id: 1, sana: "2026-07-15", hamkor: "ElectroTrade", hisob: "2020 8000 1234 5678", mfo: "00123", chiqim: 0, kirim: 5750000, izoh: "Tovar uchun to'lov" },
+  { id: 2, sana: "2026-07-10", hamkor: "Ofis egasi", hisob: "2020 8000 9988 7766", mfo: "00456", chiqim: 4500000, kirim: 0, izoh: "Ijara" },
+  { id: 3, sana: "2026-07-03", hamkor: "LightPro", hisob: "2020 8000 5544 3322", mfo: "00789", chiqim: 5200000, kirim: 0, izoh: "Avans" },
+];
+const seedMessages = [
+  { id: 1, sana: "2026-07-15", matn: "ElectroTrade dan 5 750 000 so'm o'tkazma qabul qilindi", oqilgan: false },
+  { id: 2, sana: "2026-07-12", matn: "Yangi xodim qo'shildi: Karimova Nodira", oqilgan: true },
+  { id: 3, sana: "2026-07-08", matn: "Yangi mijoz qo'shildi: LightPro", oqilgan: false },
+];
+
+const STORAGE_KEY = "hisobotBazaData_v1";
+function loadInitial() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+
+const NAV = [
+  { key: "dashboard", icon: "grid" }, { key: "sotuv", icon: "wallet" }, { key: "tahlil", icon: "chart" },
+  { key: "xabarlar", icon: "mail" }, { key: "otkazmalar", icon: "swap" }, { key: "kassa", icon: "cash" },
+  { key: "mijozlar", icon: "users" },
+  { key: "xodimlar", icon: "briefcase" }, { key: "kirim", icon: "download" }, { key: "ombor", icon: "box" },
+  { key: "xarajatlar", icon: "receipt" }, { key: "tashkilot", icon: "building" }, { key: "sozlamalar", icon: "gear" },
+];
+
+function Icon({ name, size = 17, color = "currentColor" }) {
+  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+  const paths = {
+    grid: <><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></>,
+    wallet: <><rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><circle cx="17" cy="14.5" r="1"/></>,
+    chart: <><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></>,
+    mail: <><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M3 6l9 7 9-7"/></>,
+    swap: <><path d="M17 3l4 4-4 4"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></>,
+    users: <><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><path d="M16.5 4.5a3.2 3.2 0 0 1 0 6.4"/><path d="M15 14c2.8.3 6 2.6 6 6"/></>,
+    briefcase: <><rect x="2.5" y="7.5" width="19" height="12.5" rx="2"/><path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5"/><path d="M2.5 13h19"/></>,
+    download: <><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></>,
+    box: <><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/></>,
+    receipt: <><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></>,
+    gear: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></>,
+    upload: <><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M4 4h16"/></>,
+    userMinus: <><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><path d="M16 9h6"/></>,
+    plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
+    x: <><path d="M18 6L6 18"/><path d="M6 6l12 12"/></>,
+    check: <path d="M20 6L9 17l-5-5"/>,
+    circle: <circle cx="12" cy="12" r="9"/>,
+    clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></>,
+    sun: <><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></>,
+    moon: <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>,
+    refresh: <><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 21v-5h5"/></>,
+    edit: <><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
+    cash: <><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9v.01M18 15v.01"/></>,
+    building: <><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 6h1M14 6h1M9 10h1M14 10h1M9 14h1M14 14h1M9 22v-4h6v4"/></>,
+    logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></>,
+    trash: <><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></>,
+  };
+  return <svg {...p}>{paths[name] || null}</svg>;
+}
+
+function Modal({ title, onClose, children, theme }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: theme.card, borderRadius: 12, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", border: "1px solid " + theme.border }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontWeight: 600, fontSize: 16, color: theme.text }}>{title}</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: theme.textSecondary }}><Icon name="x" size={18} /></button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = "text", theme, options }) {
+  const inputStyle = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + theme.border, background: theme.inputBg, color: theme.text, fontSize: 13 };
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 4 }}>{label}</div>
+      {type === "select" ? (
+        <select value={value} onChange={(e) => onChange(e.target.value)} style={inputStyle}>
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      ) : type === "textarea" ? (
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} style={Object.assign({}, inputStyle, { resize: "vertical", fontFamily: "inherit" })} />
+      ) : (
+        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} style={inputStyle} />
+      )}
+    </div>
+  );
+}
+
+function Clock({ lang, th }) {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, background: th.card, border: "1px solid " + th.border, borderRadius: 8, padding: "8px 14px", fontSize: 14, color: th.text }}>
+      <Icon name="clock" size={16} />
+      {now.toLocaleDateString(lang === "uz" ? "uz-UZ" : "ru-RU")} — {now.toLocaleTimeString(lang === "uz" ? "uz-UZ" : "ru-RU")}
+    </div>
+  );
+}
+
+function Card({ children, style, th }) {
+  return <div style={Object.assign({ background: th.card, border: "1px solid " + th.border, borderRadius: 12, padding: "16px 20px" }, style)}>{children}</div>;
+}
+
+function ConnectPanel({ section, th, t, cs, onUrlChange, onConnect }) {
+  return (
+    <Card th={th} style={{ marginBottom: 16 }}>
+      <div style={{ fontWeight: 600, marginBottom: 6, color: th.text }}>{t.googleSheets}</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input placeholder="https://script.google.com/macros/s/.../exec" value={cs.url || ""} onChange={(e) => onUrlChange(e.target.value)}
+          style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid " + th.border, background: th.inputBg, color: th.text }} />
+        <button style={{ padding: "9px 16px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer", background: "#1D3A5F", color: "#fff", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={onConnect}>{cs.connected ? <Icon name="check" size={14} /> : null}{cs.connected ? t.ulandi : t.ulash}</button>
+      </div>
+      {cs.fileName && <div style={{ marginTop: 8, fontSize: 12, color: th.textSecondary }}>{t.fayl}: {cs.fileName}</div>}
+    </Card>
+  );
+}
+
+function Table({ headers, rows, items, selection, onToggle, th }) {
+  const sel = selection && selection.active;
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead><tr>
+          {sel && <th style={{ padding: "10px 12px", borderBottom: "1px solid " + th.border, width: 30 }}></th>}
+          {headers.map((h, i) => <th key={i} style={{ textAlign: "left", padding: "10px 12px", color: th.textSecondary, fontWeight: 500, borderBottom: "1px solid " + th.border, whiteSpace: "nowrap" }}>{h}</th>)}
+        </tr></thead>
+        <tbody>{rows.map((row, ri) => {
+          const item = items && items[ri];
+          const checked = !!(sel && item && selection.ids.includes(item.id));
+          return (
+            <tr key={ri} style={{ borderBottom: "1px solid " + th.borderSoft }}>
+              {sel && <td style={{ padding: "10px 12px" }}>{item && !item.computed && <input type="checkbox" checked={checked} onChange={() => onToggle(item.id)} />}</td>}
+              {row.map((cell, ci) => <td key={ci} style={{ padding: "10px 12px", whiteSpace: "nowrap", color: th.text }}>{cell}</td>)}
+            </tr>
+          );
+        })}</tbody>
+      </table>
+    </div>
+  );
+}
+
+function SectionHeader({ title, actions, th }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+      <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, color: th.text }}>{title}</h2>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div>
+    </div>
+  );
+}
+
+function DoughnutChart({ data, colors, id, th }) {
+  const ref = useRef(null);
+  const chartRef = useRef(null);
+  useEffect(() => {
+    if (chartRef.current) chartRef.current.destroy();
+    chartRef.current = new Chart(ref.current, {
+      type: "doughnut",
+      data: { labels: data.map((d) => d.name), datasets: [{ data: data.map((d) => d.value), backgroundColor: colors, borderColor: th.card, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+    });
+    return () => chartRef.current && chartRef.current.destroy();
+  }, [JSON.stringify(data), th]);
+  return (
+    <div>
+      <div style={{ position: "relative", height: 180 }}><canvas ref={ref} role="img" aria-label={id}></canvas></div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10, fontSize: 12, color: th.textSecondary }}>
+        {data.map((d, i) => (<span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 9, height: 9, borderRadius: 2, background: colors[i % colors.length] }}></span>{d.name} — {fmt(d.value)}</span>))}
+      </div>
+    </div>
+  );
+}
+
+function LineChartComp({ data, th, label, ariaLabel }) {
+  const ref = useRef(null);
+  const chartRef = useRef(null);
+  useEffect(() => {
+    if (chartRef.current) chartRef.current.destroy();
+    const muted = th.textSecondary;
+    chartRef.current = new Chart(ref.current, {
+      type: "line",
+      data: { labels: data.map((d) => d.name), datasets: [{ label: label, data: data.map((d) => d.value), borderColor: th.green, backgroundColor: th.green + "22", fill: true, tension: 0.3, pointRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: muted }, grid: { display: false } }, y: { ticks: { color: muted, callback: (v) => fmt(v) }, grid: { color: th.borderSoft } } } },
+    });
+    return () => chartRef.current && chartRef.current.destroy();
+  }, [JSON.stringify(data), th]);
+  return <div style={{ position: "relative", height: 260 }}><canvas ref={ref} role="img" aria-label={ariaLabel}></canvas></div>;
+}
+
+function BarChartComp({ labels, values, colors, th }) {
+  const ref = useRef(null);
+  const chartRef = useRef(null);
+  useEffect(() => {
+    if (chartRef.current) chartRef.current.destroy();
+    const muted = th.textSecondary;
+    chartRef.current = new Chart(ref.current, {
+      type: "bar",
+      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: muted }, grid: { display: false } }, y: { ticks: { color: muted, callback: (v) => fmt(v) }, grid: { color: th.borderSoft } } } },
+    });
+    return () => chartRef.current && chartRef.current.destroy();
+  }, [JSON.stringify(values), th]);
+  return <div style={{ position: "relative", height: 220 }}><canvas ref={ref}></canvas></div>;
+}
+
+function HBarChartComp({ data, colors, id, th }) {
+  const ref = useRef(null);
+  const chartRef = useRef(null);
+  useEffect(() => {
+    if (chartRef.current) chartRef.current.destroy();
+    const muted = th.textSecondary;
+    chartRef.current = new Chart(ref.current, {
+      type: "bar",
+      data: { labels: data.map((d) => d.name), datasets: [{ data: data.map((d) => d.value), backgroundColor: data.map((d, i) => colors[i % colors.length]), borderRadius: 4 }] },
+      options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: muted, callback: (v) => fmt(v) }, grid: { color: th.borderSoft } }, y: { ticks: { color: muted }, grid: { display: false } } } },
+    });
+    return () => chartRef.current && chartRef.current.destroy();
+  }, [JSON.stringify(data), th]);
+  return <div style={{ position: "relative", height: Math.max(140, data.length * 40) }}><canvas ref={ref} role="img" aria-label={id}></canvas></div>;
+}
+
+function SelectButtons({ section, th, t, sel, onToggleMode, onDelete }) {
+  return (<>
+    <button style={{ padding: "9px 14px", borderRadius: 8, border: "1px solid " + th.border, background: th.card, color: th.text, fontSize: 13, cursor: "pointer" }} onClick={onToggleMode}>{sel.active ? t.bekorQilish : t.tanlash}</button>
+    {sel.active && <button style={{ padding: "9px 14px", borderRadius: 8, border: "1px solid " + th.red, background: th.card, color: th.red, fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={onDelete}>
+      <Icon name="trash" size={14} />{t.tanlanganlarniOchirish}{sel.ids.length ? " (" + sel.ids.length + ")" : ""}</button>}
+  </>);
+}
+
+
+function App({ onLogout }) {
+  const saved = loadInitial();
+  const [theme, setThemeName] = useState(saved && saved.themeName || "light");
+  const [lang, setLang] = useState(saved && saved.lang || "uz");
+  const [page, setPage] = useState("dashboard");
+  const [filterYear, setFilterYear] = useState("barchasi");
+  const [filterMonth, setFilterMonth] = useState("barchasi");
+  const [filterDay, setFilterDay] = useState("barchasi");
+  const [toast, setToast] = useState("");
+  const [modal, setModal] = useState(null);
+  const [clearError, setClearError] = useState("");
+  const [connectState, setConnectState] = useState({});
+  const [navOrder, setNavOrder] = useState((saved && saved.navOrder) || NAV.map((n) => n.key));
+  const dragItemRef = useRef(null);
+  const uploadSectionRef = useRef(null);
+
+  const [sales, setSales] = useState((saved && saved.sales) || seedSales);
+  const [income, setIncome] = useState((saved && saved.income) || seedIncome);
+  const [warehouse, setWarehouse] = useState((saved && saved.warehouse) || seedWarehouse);
+  const [expenses, setExpenses] = useState((saved && saved.expenses) || seedExpenses);
+  const [employees, setEmployees] = useState((saved && saved.employees) || seedEmployees);
+  const [clients, setClients] = useState((saved && saved.clients) || seedClients);
+  const [transfers, setTransfers] = useState((saved && saved.transfers) || seedTransfers);
+  const [messages, setMessages] = useState((saved && saved.messages) || seedMessages);
+  const [kassaInitial, setKassaInitial] = useState((saved && saved.kassaInitial) || 0);
+  const [kassaManual, setKassaManual] = useState((saved && saved.kassaManual) || []);
+  const [debtPayments, setDebtPayments] = useState((saved && saved.debtPayments) || []);
+  const [clientDebtPayments, setClientDebtPayments] = useState((saved && saved.clientDebtPayments) || []);
+  const [orgs, setOrgs] = useState(() => {
+    if (saved && saved.orgs) return saved.orgs;
+    if (saved && saved.org && Object.keys(saved.org).length) return [Object.assign({ id: 1 }, saved.org)];
+    return [];
+  });
+  const [kassaToBank, setKassaToBank] = useState((saved && saved.kassaToBank) || []);
+  const [selectState, setSelectState] = useState({});
+
+  const th = theme === "dark" ? DARK : LIGHT;
+  const t = DICT[lang];
+  const MONTHS = lang === "uz" ? MONTHS_UZ : MONTHS_RU;
+
+  function handleRefresh() {
+    showToast(t.yangilandi);
+  }
+
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2200);
+  }
+
+  function persistAll(next) {
+    const data = Object.assign({ themeName: theme, lang, sales, income, warehouse, expenses, employees, clients, transfers, messages, navOrder, kassaInitial, kassaManual, debtPayments, kassaToBank, clientDebtPayments, orgs }, next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function handleSave(section) {
+    persistAll({});
+    if (section) syncToSheet(section);
+    showToast(t.saqlandi);
+  }
+
+  function getConnect(section) { return connectState[section] || { url: "", connected: false, fileName: "" }; }
+  function updateConnect(section, patch) {
+    setConnectState((prev) => Object.assign({}, prev, { [section]: Object.assign({}, getConnect(section), patch) }));
+  }
+
+  function getList(section) {
+    return { sotuv: sales, kirim: income, xarajatlar: expenses, otkazmalar: transfers, mijozlar: clients, xodimlar: employees, ombor: warehouse }[section] || [];
+  }
+
+  async function handleConnectSheets(section) {
+    const cs = getConnect(section);
+    if (!cs.url || !cs.url.trim()) { showToast(t.tanlanganFaylYoq); return; }
+    updateConnect(section, { connected: true });
+    try {
+      const res = await fetch(cs.url.trim() + "?action=get&section=" + encodeURIComponent(section));
+      const json = await res.json();
+      const config = IMPORT_CONFIG[section];
+      if (config && Array.isArray(json.rows) && json.rows.length) {
+        config.setter(json.rows.map((row) => Object.assign({ id: Date.now() + Math.random() }, row)));
+      }
+      showToast(t.ulandi);
+    } catch (err) {
+      showToast(t.ulandi + " (" + t.faylXato + ")");
+    }
+  }
+
+  async function syncToSheet(section) {
+    const cs = getConnect(section);
+    if (!cs.connected || !cs.url) return;
+    try {
+      await fetch(cs.url.trim(), {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ section, rows: getList(section) }),
+      });
+    } catch (err) {}
+  }
+
+  useEffect(() => {
+    ["sotuv", "kirim", "xarajatlar", "xodimlar", "mijozlar", "otkazmalar", "ombor"].forEach((section) => {
+      const cs = getConnect(section);
+      if (cs.connected && cs.url) syncToSheet(section);
+    });
+  }, [sales, income, expenses, employees, clients, transfers, warehouse]);
+
+  const SELECT_SETTERS = { sotuv: setSales, kirim: setIncome, xarajatlar: setExpenses, xodimlar: setEmployees, mijozlar: setClients, otkazmalar: setTransfers, tashkilot: setOrgs };
+  const SELECT_LISTS = { sotuv: sales, kirim: income, xarajatlar: expenses, xodimlar: employees, mijozlar: clients, otkazmalar: transfers, tashkilot: orgs };
+
+  function getSelect(section) { return selectState[section] || { active: false, ids: [] }; }
+  function toggleSelectMode(section) {
+    setSelectState((prev) => {
+      const cur = prev[section] || { active: false, ids: [] };
+      return Object.assign({}, prev, { [section]: { active: !cur.active, ids: [] } });
+    });
+  }
+  function toggleSelectRow(section, id) {
+    setSelectState((prev) => {
+      const cur = prev[section] || { active: false, ids: [] };
+      const ids = cur.ids.includes(id) ? cur.ids.filter((x) => x !== id) : [...cur.ids, id];
+      return Object.assign({}, prev, { [section]: { active: true, ids } });
+    });
+  }
+  function deleteSelected(section) {
+    const cur = getSelect(section);
+    if (!cur.ids.length) return;
+    if (!window.confirm(t.ochirishTasdiq)) return;
+    const setter = SELECT_SETTERS[section];
+    const list = SELECT_LISTS[section];
+    if (setter && list) setter(list.filter((item) => !cur.ids.includes(item.id)));
+    setSelectState((prev) => Object.assign({}, prev, { [section]: { active: false, ids: [] } }));
+    showToast(t.ochirildi);
+  }
+
+  function handleDragStart(idx) { dragItemRef.current = idx; }
+  function handleDragOver(e) { e.preventDefault(); }
+  function handleDrop(idx) {
+    const from = dragItemRef.current;
+    dragItemRef.current = null;
+    if (from === null || from === undefined || from === idx) return;
+    setNavOrder((prev) => {
+      const arr = prev.slice();
+      const moved = arr.splice(from, 1)[0];
+      arr.splice(idx, 0, moved);
+      persistAll({ navOrder: arr });
+      return arr;
+    });
+  }
+
+  const fileInputRef = useRef(null);
+  function handlePickExcel(section) {
+    uploadSectionRef.current = section;
+    fileInputRef.current && fileInputRef.current.click();
+  }
+
+  const IMPORT_CONFIG = {
+    sotuv: { columns: [
+      { key: "sana" }, { key: "nomi" }, { key: "miqdor", numeric: true }, { key: "narx", numeric: true },
+      { key: "jamiSumma", skip: true }, { key: "tolov" }, { key: "xodim" },
+    ], setter: setSales },
+    kirim: { columns: [
+      { key: "sana" }, { key: "nomi" }, { key: "hamkor" }, { key: "miqdor", numeric: true }, { key: "narx", numeric: true },
+      { key: "qqs", skip: true }, { key: "narxQqs", skip: true }, { key: "jamiSumma", skip: true }, { key: "tolov" }, { key: "holat" },
+    ], setter: setIncome },
+    xarajatlar: { columns: [
+      { key: "sana" }, { key: "nomi" }, { key: "miqdor", numeric: true }, { key: "narx", numeric: true }, { key: "hisob" }, { key: "izoh" },
+    ], setter: setExpenses },
+    otkazmalar: { columns: [
+      { key: "no", skip: true }, { key: "sana" }, { key: "hamkor" }, { key: "hisob" }, { key: "mfo" },
+      { key: "chiqim", numeric: true }, { key: "kirim", numeric: true }, { key: "izoh" },
+    ], setter: setTransfers },
+    mijozlar: { columns: [{ key: "ism" }, { key: "inn" }, { key: "manzil" }, { key: "izoh" }], setter: setClients },
+    xodimlar: { columns: [
+      { key: "fio" }, { key: "lavozim" }, { key: "telefon" }, { key: "manzil" }, { key: "jins" }, { key: "oylik", numeric: true },
+    ], setter: setEmployees },
+    ombor: { columns: [
+      { key: "mahsulot" }, { key: "jamiKirim", numeric: true }, { key: "sotildi", numeric: true }, { key: "qoldiq", skip: true },
+    ], setter: setWarehouse },
+  };
+
+  function cleanCellValue(v) {
+    if (v === undefined || v === null) return "";
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    if (typeof v === "object") return "";
+    return v;
+  }
+
+  function handleFileChosen(e) {
+    const section = uploadSectionRef.current;
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file || !section) return;
+    updateConnect(section, { fileName: file.name });
+    const config = IMPORT_CONFIG[section];
+    if (!config) { showToast(file.name + " " + t.faylYuklandi); return; }
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: "array", cellDates: true });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        const dataRows = rows.slice(1).filter((r) => Array.isArray(r) && r.some((c) => c !== "" && c != null));
+        const newItems = dataRows.map((r) => {
+          const obj = {};
+          config.columns.forEach((col, i) => {
+            if (col.skip) return;
+            let v = cleanCellValue(r[i]);
+            if (col.numeric) v = Number(v) || 0;
+            obj[col.key] = v;
+          });
+          obj.id = Date.now() + Math.random();
+          return obj;
+        });
+        if (newItems.length) {
+          config.setter((prev) => [...prev, ...newItems]);
+          showToast(newItems.length + " " + t.qatorQoshildi);
+        } else {
+          showToast(t.malumotYoq);
+        }
+      } catch (err) {
+        showToast(t.faylXato);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function pushMessage(text) {
+    setMessages((prev) => [...prev, { id: Date.now() + Math.random(), sana: new Date().toISOString().slice(0, 10), matn: text, oqilgan: false }]);
+  }
+
+  const inFilter = (dateStr) => {
+    if (!dateStr) return true;
+    const d = new Date(dateStr);
+    if (filterYear !== "barchasi" && d.getFullYear() !== Number(filterYear)) return false;
+    if (filterMonth !== "barchasi" && d.getMonth() !== Number(filterMonth)) return false;
+    if (filterDay !== "barchasi" && d.getDate() !== Number(filterDay)) return false;
+    return true;
+  };
+
+  const salesF = useMemo(() => sales.filter((s) => inFilter(s.sana)), [sales, filterYear, filterMonth, filterDay]);
+  const incomeF = useMemo(() => income.filter((s) => inFilter(s.sana)), [income, filterYear, filterMonth, filterDay]);
+  const expensesF = useMemo(() => expenses.filter((s) => inFilter(s.sana)), [expenses, filterYear, filterMonth, filterDay]);
+
+  const salesJami = (r) => r.miqdor * r.narx;
+  const incomeJami = (r) => r.miqdor * (r.narx * 1.12);
+  const umumiyBalans = salesF.reduce((a, r) => a + salesJami(r), 0);
+  const naxt = salesF.filter((r) => r.tolov === "Naxt").reduce((a, r) => a + salesJami(r), 0);
+  const bank = salesF.filter((r) => r.tolov === "Bank").reduce((a, r) => a + salesJami(r), 0);
+
+  const oylikJamiAll = useMemo(() => employees.reduce((a, e) => a + Number(e.oylik || 0), 0), [employees]);
+
+  const kassaToBankRef = kassaToBank;
+  const transfersComputed = useMemo(() => {
+    const salesBankItems = sales.filter((s) => s.tolov === "Bank").map((s) => ({ id: "sb" + s.id, sana: s.sana, hamkor: "-", hisob: "-", mfo: "-", chiqim: 0, kirim: salesJami(s), izoh: t.sotuv + ": " + s.nomi, computed: true }));
+    const incomeBankItems = income.filter((r) => r.tolov === "Bank" && r.holat !== "Qarzga olingan").map((r) => ({ id: "ib" + r.id, sana: r.sana, hamkor: r.hamkor, hisob: "-", mfo: "-", chiqim: incomeJami(r), kirim: 0, izoh: t.kirim + ": " + r.nomi, computed: true }));
+    const expenseBankItems = expenses.filter((e) => (e.hisob || "Naxt") === "Bank").map((e) => ({ id: "eb" + e.id, sana: e.sana, hamkor: "-", hisob: "-", mfo: "-", chiqim: e.miqdor * e.narx, kirim: 0, izoh: t.xarajatlar + ": " + e.nomi, computed: true }));
+    const bankItems = kassaToBankRef.map((b) => ({ id: "kb" + b.id, sana: b.sana, hamkor: "-", hisob: "-", mfo: "-", chiqim: 0, kirim: Number(b.summa) || 0, izoh: t.kassa + " \u2192 " + t.bank, computed: true }));
+    return [...transfers, ...salesBankItems, ...incomeBankItems, ...expenseBankItems, ...bankItems];
+  }, [transfers, sales, income, expenses, kassaToBankRef, lang]);
+  const transfersF = useMemo(() => transfersComputed.filter((r) => inFilter(r.sana)), [transfersComputed, filterYear, filterMonth, filterDay]);
+
+  const xarajatJami = expensesF.reduce((a, r) => a + r.miqdor * r.narx, 0)
+    + incomeF.filter((r) => r.holat !== "Qarzga olingan").reduce((a, r) => a + incomeJami(r), 0)
+    + transfersF.filter((r) => !r.computed).reduce((a, r) => a + Number(r.chiqim || 0), 0);
+  const sofFoyda = umumiyBalans - xarajatJami;
+
+  const filterCutoff = useMemo(() => {
+    if (filterYear === "barchasi" && filterMonth === "barchasi" && filterDay === "barchasi") return null;
+    const now = new Date();
+    const y = filterYear !== "barchasi" ? Number(filterYear) : now.getFullYear();
+    if (filterDay !== "barchasi") {
+      const mo = filterMonth !== "barchasi" ? Number(filterMonth) : now.getMonth();
+      return new Date(y, mo, Number(filterDay), 23, 59, 59, 999);
+    }
+    if (filterMonth !== "barchasi") {
+      return new Date(y, Number(filterMonth) + 1, 0, 23, 59, 59, 999);
+    }
+    return new Date(y, 11, 31, 23, 59, 59, 999);
+  }, [filterYear, filterMonth, filterDay]);
+
+  const qarzdorlik = useMemo(() => {
+    let total = 0;
+    income.filter((r) => r.holat === "Qarzga olingan" && (!filterCutoff || new Date(r.sana) <= filterCutoff)).forEach((r) => { total += incomeJami(r); });
+    debtPayments.filter((d) => !filterCutoff || new Date(d.sana) <= filterCutoff).forEach((d) => { total -= Number(d.summa) || 0; });
+    return total;
+  }, [income, debtPayments, filterCutoff]);
+
+  const qarzdorlikJami = income.filter((r) => r.holat === "Qarzga olingan").reduce((a, r) => a + incomeJami(r), 0) - debtPayments.reduce((a, d) => a + Number(d.summa || 0), 0);
+  const qarzPerPartner = useMemo(() => {
+    const map = {};
+    income.filter((r) => r.holat === "Qarzga olingan").forEach((r) => { map[r.hamkor] = (map[r.hamkor] || 0) + incomeJami(r); });
+    debtPayments.forEach((d) => { map[d.hamkor] = (map[d.hamkor] || 0) - (Number(d.summa) || 0); });
+    return Object.entries(map).map(([hamkor, qoldiq]) => ({ hamkor, qoldiq })).filter((x) => Math.round(x.qoldiq) !== 0);
+  }, [income, debtPayments]);
+
+  const mijozQarziPer = useMemo(() => {
+    const map = {};
+    sales.filter((s) => s.tolov === "Qarz").forEach((s) => { const k = s.hamkor || "-"; map[k] = (map[k] || 0) + salesJami(s); });
+    clientDebtPayments.forEach((d) => { map[d.hamkor] = (map[d.hamkor] || 0) - (Number(d.summa) || 0); });
+    return Object.entries(map).map(([hamkor, qoldiq]) => ({ hamkor, qoldiq })).filter((x) => Math.round(x.qoldiq) !== 0);
+  }, [sales, clientDebtPayments]);
+  const mijozQarziJami = mijozQarziPer.reduce((a, x) => a + x.qoldiq, 0);
+
+  const xarajatToifalari = useMemo(() => {
+    const map = {};
+    expensesF.forEach((e) => { map[e.nomi] = (map[e.nomi] || 0) + e.miqdor * e.narx; });
+    const incomeJamiTotal = incomeF.filter((r) => r.holat !== "Qarzga olingan").reduce((a, r) => a + incomeJami(r), 0);
+    if (incomeJamiTotal) map[t.kirimSoz] = incomeJamiTotal;
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [expensesF, incomeF, lang]);
+
+  const kassaOps = useMemo(() => {
+    const arr = [];
+    sales.filter((s) => s.tolov === "Naxt").forEach((s) => arr.push({ id: "s" + s.id, sana: s.sana, turi: "kirim", summa: salesJami(s), izoh: t.sotuv + ": " + s.nomi }));
+    income.filter((r) => r.tolov === "Naxt" && r.holat !== "Qarzga olingan").forEach((r) => arr.push({ id: "i" + r.id, sana: r.sana, turi: "chiqim", summa: incomeJami(r), izoh: t.kirim + ": " + r.nomi }));
+    expenses.filter((e) => (e.hisob || "Naxt") === "Naxt").forEach((e) => arr.push({ id: "ex" + e.id, sana: e.sana, turi: "chiqim", summa: e.miqdor * e.narx, izoh: t.xarajatlar + ": " + e.nomi }));
+    debtPayments.forEach((d) => arr.push({ id: "d" + d.id, sana: d.sana, turi: "chiqim", summa: Number(d.summa) || 0, izoh: t.qarzYopish + ": " + d.hamkor }));
+    clientDebtPayments.forEach((d) => arr.push({ id: "cd" + d.id, sana: d.sana, turi: "kirim", summa: Number(d.summa) || 0, izoh: t.mijozdanYigish + ": " + d.hamkor }));
+    kassaToBankRef.forEach((b) => arr.push({ id: "b" + b.id, sana: b.sana, turi: "chiqim", summa: Number(b.summa) || 0, izoh: t.kassadanBank }));
+    kassaManual.forEach((m) => arr.push({ id: "m" + m.id, sana: m.sana, turi: m.turi, summa: Number(m.summa) || 0, izoh: (m.hamkor ? m.hamkor + (m.izoh ? " — " + m.izoh : "") : (m.izoh || "-")) }));
+    return arr.sort((a, b) => (a.sana < b.sana ? 1 : a.sana > b.sana ? -1 : 0));
+  }, [sales, income, expenses, debtPayments, clientDebtPayments, kassaToBankRef, kassaManual, lang]);
+
+  const kassaKirimJami = kassaOps.filter((o) => o.turi === "kirim").reduce((a, o) => a + o.summa, 0);
+  const kassaChiqimJami = kassaOps.filter((o) => o.turi === "chiqim").reduce((a, o) => a + o.summa, 0);
+  const kassaOpsF = useMemo(() => kassaOps.filter((o) => inFilter(o.sana)), [kassaOps, filterYear, filterMonth, filterDay]);
+  const kassaKirimF = kassaOpsF.filter((o) => o.turi === "kirim").reduce((a, o) => a + o.summa, 0);
+  const kassaChiqimF = kassaOpsF.filter((o) => o.turi === "chiqim").reduce((a, o) => a + o.summa, 0);
+  const kassaQoldiq = Number(kassaInitial || 0) + kassaKirimJami - kassaChiqimJami;
+
+  const bankKirimJami = transfersComputed.reduce((a, r) => a + Number(r.kirim || 0), 0);
+  const bankChiqimJami = transfersComputed.reduce((a, r) => a + Number(r.chiqim || 0), 0);
+  const bankBalans = bankKirimJami - bankChiqimJami;
+  const bankKirimF = transfersF.reduce((a, r) => a + Number(r.kirim || 0), 0);
+  const bankChiqimF = transfersF.reduce((a, r) => a + Number(r.chiqim || 0), 0);
+
+  const songiHarakatlar = useMemo(() => {
+    const merged = [
+      ...transfersComputed.map((tr) => ({ id: "tr" + tr.id, sana: tr.sana, label: tr.hamkor, amount: tr.kirim ? tr.kirim : -tr.chiqim })),
+      ...kassaOps.map((o) => ({ id: "ko" + o.id, sana: o.sana, label: o.izoh, amount: o.turi === "kirim" ? o.summa : -o.summa })),
+    ];
+    return merged.sort((a, b) => (a.sana < b.sana ? 1 : a.sana > b.sana ? -1 : 0)).slice(0, 3);
+  }, [transfersComputed, kassaOps]);
+
+  const monthlyTrend = useMemo(() => {
+    const map = {};
+    sales.forEach((r) => {
+      if (!r.sana) return;
+      const d = new Date(r.sana);
+      if (isNaN(d.getTime())) return;
+      const key = d.getFullYear() + "-" + d.getMonth();
+      map[key] = (map[key] || 0) + salesJami(r);
+    });
+    return Object.entries(map).sort().map(([key, value]) => {
+      const parts = key.split("-");
+      const monthLabel = MONTHS[Number(parts[1])] || "";
+      return { name: monthLabel.slice(0, 3) + " " + parts[0], value };
+    });
+  }, [sales, lang]);
+
+  const salesAnalytics = useMemo(() => {
+    const now = new Date();
+    let kunlik = 0, oylik = 0, yillik = 0;
+    sales.forEach((r) => {
+      if (!r.sana) return;
+      const d = new Date(r.sana);
+      if (isNaN(d.getTime())) return;
+      const summa = salesJami(r);
+      if (d.toDateString() === now.toDateString()) kunlik += summa;
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) oylik += summa;
+      if (d.getFullYear() === now.getFullYear()) yillik += summa;
+    });
+    const byMahsulot = {}, byXodim = {};
+    salesF.forEach((r) => {
+      byMahsulot[r.nomi] = (byMahsulot[r.nomi] || 0) + Number(r.miqdor || 0);
+      const xodimNomi = r.xodim || "-";
+      byXodim[xodimNomi] = (byXodim[xodimNomi] || 0) + salesJami(r);
+    });
+    const topMahsulotlar = Object.entries(byMahsulot).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
+    const topXodimlar = Object.entries(byXodim).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
+    return { kunlik, oylik, yillik, topMahsulotlar, topXodimlar };
+  }, [sales, salesF]);
+
+  const years = useMemo(() => {
+    const set = new Set();
+    [...sales, ...income, ...expenses].forEach((r) => {
+      if (!r.sana) return;
+      const d = new Date(r.sana);
+      if (!isNaN(d.getTime())) set.add(d.getFullYear());
+    });
+    return Array.from(set).sort();
+  }, [sales, income, expenses]);
+
+  const omborComputed = useMemo(() => {
+    const map = {};
+    const addTo = (name, jamiKirim, sotildi) => {
+      const key = (name || "-").trim() || "-";
+      if (!map[key]) map[key] = { mahsulot: key, jamiKirim: 0, sotildi: 0 };
+      map[key].jamiKirim += jamiKirim || 0;
+      map[key].sotildi += sotildi || 0;
+    };
+    warehouse.forEach((w) => addTo(w.mahsulot, Number(w.jamiKirim) || 0, Number(w.sotildi) || 0));
+    income.forEach((r) => addTo(r.nomi, Number(r.miqdor) || 0, 0));
+    sales.forEach((r) => addTo(r.nomi, 0, Number(r.miqdor) || 0));
+    return Object.values(map);
+  }, [warehouse, income, sales]);
+
+  const unreadCount = messages.filter((m) => !m.oqilgan).length;
+
+  const kirimMahsulotlar = useMemo(() => {
+    const set = new Set();
+    income.forEach((r) => { if (r.nomi) set.add(r.nomi); });
+    return Array.from(set);
+  }, [income]);
+  const clientNames = useMemo(() => clients.map((c) => c.ism), [clients]);
+
+  function addRow(setter, list, row) {
+    setter([...list, Object.assign({ id: Date.now() }, row)]);
+    showToast(t.saqlandi);
+  }
+
+  function openModal(type, initial) { setModal({ type, form: initial || {} }); setClearError(""); }
+  function openEditModal(type, row) { setModal({ type, form: Object.assign({}, row), editId: row.id }); setClearError(""); }
+  function closeModal() { setModal(null); setClearError(""); }
+  function setForm(patch) { setModal((m) => Object.assign({}, m, { form: Object.assign({}, m.form, patch) })); }
+
+  function checkFunds(hisobTuri, amount) {
+    if (!(amount > 0)) return true;
+    if (hisobTuri === "Naxt") {
+      if (amount > kassaQoldiq) { window.alert(t.kassaYetarliEmas); return false; }
+    } else if (hisobTuri === "Bank") {
+      if (amount > bankBalans) { window.alert(t.bankYetarliEmas); return false; }
+    }
+    return true;
+  }
+
+  async function submitModal() {
+    const f = modal.form;
+    const today = new Date().toISOString().slice(0, 10);
+    const isEdit = !!modal.editId;
+
+    if (modal.type === "clearAll") {
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (e) {}
+      if (!stored) { setClearError(t.parolXato); return; }
+      const hash = await hashPassword(f.password || "", stored.salt);
+      if (hash !== stored.hash) { setClearError(t.parolXato); return; }
+      setSales([]); setIncome([]); setWarehouse([]); setExpenses([]); setEmployees([]); setClients([]); setTransfers([]);
+      setMessages([]); setKassaInitial(0); setKassaManual([]); setDebtPayments([]); setKassaToBank([]); setClientDebtPayments([]); setOrgs([]);
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      closeModal();
+      showToast(t.tozalandi);
+      return;
+    }
+
+    function upsert(setter, list, row) {
+      if (isEdit) {
+        setter(list.map((item) => item.id === modal.editId ? Object.assign({}, item, row) : item));
+        showToast(t.saqlandi);
+      } else {
+        addRow(setter, list, row);
+      }
+    }
+
+    if (modal.type === "employee") {
+      upsert(setEmployees, employees, { fio: f.fio || "-", lavozim: f.lavozim || "-", telefon: f.telefon || "-", manzil: f.manzil || "-", jins: f.jins || "Erkak", oylik: Number(f.oylik || 0) });
+      if (!isEdit) pushMessage(t.xabarYangiXodim + " " + (f.fio || "-"));
+    } else if (modal.type === "client") {
+      upsert(setClients, clients, { ism: f.ism || "-", inn: f.inn || "-", manzil: f.manzil || "-", izoh: f.izoh || "" });
+      if (!isEdit) pushMessage(t.xabarYangiMijoz + " " + (f.ism || "-"));
+    } else if (modal.type === "org") {
+      upsert(setOrgs, orgs, {
+        nomi: f.nomi || "-", stir: f.stir || "", mfo: f.mfo || "", hisobRaqam: f.hisobRaqam || "", bankNomi: f.bankNomi || "",
+        inn: f.inn || "", oked: f.oked || "", manzil: f.manzil || "", telefon: f.telefon || "", email: f.email || "",
+        rahbar: f.rahbar || "", hisobchi: f.hisobchi || "",
+      });
+    } else if (modal.type === "sale") {
+      upsert(setSales, sales, { sana: f.sana || today, nomi: f.nomi || "-", miqdor: Number(f.miqdor || 1), narx: Number(f.narx || 0), tolov: f.tolov || "Naxt", xodim: f.xodim || (employees[0] && employees[0].fio) || "-", hamkor: f.tolov === "Qarz" ? (f.hamkor || "-") : "-" });
+    } else if (modal.type === "clientDebtPayment") {
+      const hamkorNomi = f.hamkor || "-";
+      const summaVal = Number(f.summa || 0);
+      const oldQoldiq = (mijozQarziPer.find((q) => q.hamkor === hamkorNomi) || { qoldiq: 0 }).qoldiq;
+      addRow(setClientDebtPayments, clientDebtPayments, { sana: f.sana || today, hamkor: hamkorNomi, summa: summaVal });
+      if (oldQoldiq > 0 && oldQoldiq - summaVal <= 0) pushMessage(t.qarzTolandi + ": " + hamkorNomi);
+    } else if (modal.type === "income") {
+      const holatVal = f.holat || "Pulga olingan";
+      const tolovVal = holatVal === "Qarzga olingan" ? "" : (f.tolov || "Bank");
+      const amountVal = Number(f.miqdor || 1) * Number(f.narx || 0) * 1.12;
+      if (!isEdit && tolovVal && !checkFunds(tolovVal, amountVal)) return;
+      upsert(setIncome, income, { sana: f.sana || today, nomi: f.nomi || "-", hamkor: f.hamkor || "-", miqdor: Number(f.miqdor || 1), narx: Number(f.narx || 0), tolov: tolovVal, holat: holatVal });
+    } else if (modal.type === "expense") {
+      const hisobVal = f.hisob || "Naxt";
+      const amountVal = Number(f.miqdor || 1) * Number(f.narx || 0);
+      if (!isEdit && !checkFunds(hisobVal, amountVal)) return;
+      upsert(setExpenses, expenses, { sana: f.sana || today, nomi: f.nomi || "-", miqdor: Number(f.miqdor || 1), narx: Number(f.narx || 0), izoh: f.izoh || "", hisob: hisobVal });
+    } else if (modal.type === "transfer") {
+      const hamkorNomi = f.hamkor || "-";
+      const chiqimVal = Number(f.chiqim || 0);
+      if (!isEdit && !checkFunds("Bank", chiqimVal)) return;
+      upsert(setTransfers, transfers, { sana: f.sana || today, hamkor: hamkorNomi, hisob: f.hisob || "-", mfo: f.mfo || "-", chiqim: chiqimVal, kirim: Number(f.kirim || 0), izoh: f.izoh || "" });
+      if (!isEdit) pushMessage(t.xabarYangiOtkazma + " " + hamkorNomi + " — " + fmt(Number(f.kirim || f.chiqim || 0)));
+      if (!isEdit && chiqimVal > 0) {
+        const oldQoldiq = (qarzPerPartner.find((q) => q.hamkor === hamkorNomi) || { qoldiq: 0 }).qoldiq;
+        if (oldQoldiq > 0) {
+          const paid = Math.min(chiqimVal, oldQoldiq);
+          addRow(setDebtPayments, debtPayments, { sana: f.sana || today, hamkor: hamkorNomi, summa: paid });
+          if (oldQoldiq - paid <= 0) pushMessage(t.qarzTolandi + ": " + hamkorNomi);
+        }
+      }
+    } else if (modal.type === "warehouse") {
+      upsert(setWarehouse, warehouse, { mahsulot: f.mahsulot || "-", jamiKirim: Number(f.jamiKirim || 0), sotildi: Number(f.sotildi || 0) });
+    } else if (modal.type === "message") {
+      setMessages(messages.map((m) => m.id === modal.editId ? Object.assign({}, m, { matn: f.matn || m.matn, sana: f.sana || m.sana }) : m));
+      showToast(t.saqlandi);
+    } else if (modal.type === "kassaBank") {
+      const summaVal = Number(f.summa || 0);
+      if (!checkFunds("Naxt", summaVal)) return;
+      addRow(setKassaToBank, kassaToBank, { sana: f.sana || today, summa: summaVal, izoh: f.izoh || "" });
+    } else if (modal.type === "kassaManual") {
+      const hamkorNomi = f.hamkor || "";
+      const kimgaTuri = f.kimgaTuri || "mijoz";
+      const summaVal = Number(f.summa || 0);
+      const turiVal = f.turi || "kirim";
+      if (turiVal === "chiqim" && !checkFunds("Naxt", summaVal)) return;
+      addRow(setKassaManual, kassaManual, { sana: f.sana || today, turi: turiVal, summa: summaVal, izoh: f.izoh || "", hamkor: hamkorNomi, kimgaTuri: turiVal === "chiqim" ? kimgaTuri : "" });
+      if (turiVal === "chiqim" && hamkorNomi && kimgaTuri === "mijoz") {
+        const oldQoldiq = (qarzPerPartner.find((q) => q.hamkor === hamkorNomi) || { qoldiq: 0 }).qoldiq;
+        if (oldQoldiq > 0) {
+          const paid = Math.min(summaVal, oldQoldiq);
+          addRow(setDebtPayments, debtPayments, { sana: f.sana || today, hamkor: hamkorNomi, summa: paid });
+          if (oldQoldiq - paid <= 0) pushMessage(t.qarzTolandi + ": " + hamkorNomi);
+        }
+      }
+    }
+    closeModal();
+  }
+
+  const btnBase = { padding: "8px 16px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 };
+  const btnPrimary = { ...btnBase, background: "#1D3A5F", color: "#fff" };
+  const btnGreen = { ...btnBase, background: th.green, color: "#fff" };
+  const btnGhost = { ...btnBase, background: th.card, border: "1px solid " + th.border, color: th.text };
+  const selectStyle = { padding: "8px 12px", borderRadius: 8, border: "1px solid " + th.border, fontSize: 13, background: th.inputBg, color: th.text };
+  const badge = { background: th.red, color: "#fff", fontSize: 11, borderRadius: 10, padding: "1px 7px", fontWeight: 500 };
+  const cardLabel = { fontSize: 13, color: th.textSecondary, marginBottom: 6 };
+  const cardValue = { fontSize: 22, fontWeight: 600, color: th.text };
+  const iconBtn = { background: "none", border: "none", cursor: "pointer", color: th.blue, padding: 4, display: "inline-flex" };
+
+
+  const PIE_COLORS = theme === "dark" ? ["#39B98B", "#6CA9EE", "#E08A6B", "#E3B15C"] : ["#0F6E56", "#185FA5", "#993C1D", "#854F0B"];
+
+  function renderDashboard() {
+    return (
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+          <div><h1 style={{ fontSize: 24, fontWeight: 600, margin: 0, color: th.text }}>{t.welcome}, Begzod</h1><div style={{ color: th.textSecondary, fontSize: 14, marginTop: 4 }}>{t.dashboard}</div></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Clock lang={lang} th={th} />
+            <button onClick={handleRefresh} title={t.yangilash} style={Object.assign({}, btnGhost, { padding: "8px 10px" })}>
+              <Icon name="refresh" size={16} />
+            </button>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} style={selectStyle}>
+            <option value="barchasi">{t.yil}: {t.barchasi}</option>{years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} style={selectStyle}>
+            <option value="barchasi">{t.oy}: {t.barchasi}</option>{MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+          </select>
+          <select value={filterDay} onChange={(e) => setFilterDay(e.target.value)} style={selectStyle}>
+            <option value="barchasi">{t.kun}: {t.barchasi}</option>{Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
+          <Card th={th}><div style={cardLabel}>{t.umumiyBalans}</div><div style={cardValue}>{fmt(umumiyBalans)}</div><div style={{ fontSize: 12, color: th.textSecondary, marginTop: 4 }}>{t.naxt}: {fmt(naxt)} · {t.bank}: {fmt(bank)}</div></Card>
+          <Card th={th}><div style={cardLabel}>{t.xarajatlar}</div><div style={cardValue}>{fmt(xarajatJami)}</div></Card>
+          <Card th={th}><div style={cardLabel}>{t.sofFoyda}</div><div style={Object.assign({}, cardValue, { color: sofFoyda >= 0 ? th.green : th.red })}>{fmt(sofFoyda)}</div></Card>
+          <Card th={th}><div style={cardLabel}>{t.qarzdorlik}</div><div style={cardValue}>{fmt(qarzdorlik)}</div></Card>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14, marginBottom: 20 }}>
+          <Card th={th}><div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.xarajatToifalari}</div>
+            {xarajatToifalari.length ? <HBarChartComp data={xarajatToifalari} colors={PIE_COLORS} id={t.xarajatToifalari} th={th} /> : <div style={{ fontSize: 13, color: th.textSecondary }}>—</div>}</Card>
+          <Card th={th}><div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.kassaHisobi}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: th.textSecondary, marginBottom: 4 }}><span>{t.jamiKirim}</span><span style={{ color: th.green, fontWeight: 500 }}>{fmt(kassaKirimF)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: th.textSecondary, marginBottom: 4 }}><span>{t.jamiChiqim}</span><span style={{ color: th.red, fontWeight: 500 }}>{fmt(kassaChiqimF)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 600, color: th.text, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + th.borderSoft }}><span>{t.joriyQoldiq}</span><span>{fmt(kassaQoldiq)}</span></div>
+          </Card>
+          <Card th={th}><div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.bankHisobi}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: th.textSecondary, marginBottom: 4 }}><span>{t.kirimSoz}</span><span style={{ color: th.green, fontWeight: 500 }}>{fmt(bankKirimF)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: th.textSecondary, marginBottom: 4 }}><span>{t.chiqim}</span><span style={{ color: th.red, fontWeight: 500 }}>{fmt(bankChiqimF)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 600, color: th.text, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + th.borderSoft }}><span>{t.joriyQoldiq}</span><span>{fmt(bankBalans)}</span></div>
+          </Card>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14 }}>
+          <Card th={th}>
+            <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.xabarlar} {unreadCount > 0 && <span style={badge}>{unreadCount}</span>}</div>
+            {messages.slice(-3).reverse().map((m) => (<div key={m.id} style={{ display: "flex", gap: 8, padding: "8px 0", borderBottom: "1px solid " + th.borderSoft, alignItems: "flex-start" }}>
+              <Icon name={m.oqilgan ? "check" : "circle"} size={14} color={m.oqilgan ? th.textSecondary : th.red} />
+              <div><div style={{ fontSize: 13, fontWeight: m.oqilgan ? 400 : 600, color: th.text }}>{m.matn}</div><div style={{ fontSize: 11, color: th.textSecondary }}>{m.sana}</div></div>
+            </div>))}
+          </Card>
+          <Card th={th}>
+            <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.songiOtkazmalar}</div>
+            {songiHarakatlar.map((it) => (<div key={it.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid " + th.borderSoft, fontSize: 13, color: th.text }}>
+              <span>{it.sana} — {it.label}</span><span style={{ color: it.amount >= 0 ? th.green : th.red, fontWeight: 500 }}>{it.amount >= 0 ? "+" + fmt(it.amount) : "-" + fmt(Math.abs(it.amount))}</span>
+            </div>))}
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSotuv() {
+    const sel = getSelect("sotuv");
+    return (<div>
+      <SectionHeader th={th} title={t.sotuv} actions={<><SelectButtons section="sotuv" th={th} t={t} sel={getSelect("sotuv")} onToggleMode={() => toggleSelectMode("sotuv")} onDelete={() => deleteSelected("sotuv")} /><button style={btnGhost} onClick={() => handlePickExcel("sotuv")}><Icon name="upload" size={14} />{t.hujjatYuklash}</button><button style={btnPrimary} onClick={() => openModal("sale", { nomi: kirimMahsulotlar[0] || "", tolov: "Naxt", xodim: (employees[0] && employees[0].fio) || "" })}>{t.qoshish}</button></>} />
+      <ConnectPanel section="sotuv" th={th} t={t} cs={getConnect("sotuv")} onUrlChange={(v) => updateConnect("sotuv", { url: v })} onConnect={() => handleConnectSheets("sotuv")} />
+      <Card th={th}><Table th={th} headers={[t.sana, t.mahsulotXizmat, t.miqdor, t.sotishNarxi, t.jamiSumma, t.tolovTuri, t.sotuvchi, t.amal]}
+        items={sales} selection={sel} onToggle={(id) => toggleSelectRow("sotuv", id)}
+        rows={sales.map((s) => [s.sana, s.nomi, s.miqdor, fmt(s.narx), fmt(salesJami(s)), s.tolov === "Naxt" ? t.naxt : s.tolov === "Bank" ? t.bank : t.qarz, s.xodim || "-", <button key={"e" + s.id} style={iconBtn} onClick={() => openEditModal("sale", s)}><Icon name="edit" size={14} /></button>])} /></Card>
+    </div>);
+  }
+
+  function renderTahlil() {
+    return (<div>
+      <SectionHeader th={th} title={t.tahlil} actions={<button onClick={handleRefresh} style={btnGhost}><Icon name="refresh" size={14} />{t.yangilash}</button>} />
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} style={selectStyle}>
+          <option value="barchasi">{t.yil}: {t.barchasi}</option>{years.map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} style={selectStyle}>
+          <option value="barchasi">{t.oy}: {t.barchasi}</option>{MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+        </select>
+        <select value={filterDay} onChange={(e) => setFilterDay(e.target.value)} style={selectStyle}>
+          <option value="barchasi">{t.kun}: {t.barchasi}</option>{Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+      <Card th={th} style={{ marginBottom: 14 }}>
+        <div style={cardLabel}>{t.tanlanganDavrSotuv}</div>
+        <div style={cardValue}>{fmt(umumiyBalans)}</div>
+      </Card>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 14 }}>
+        <Card th={th}><div style={cardLabel}>{t.kunlikSotuv}</div><div style={cardValue}>{fmt(salesAnalytics.kunlik)}</div></Card>
+        <Card th={th}><div style={cardLabel}>{t.oylikSotuv}</div><div style={cardValue}>{fmt(salesAnalytics.oylik)}</div></Card>
+        <Card th={th}><div style={cardLabel}>{t.yillikSotuv}</div><div style={cardValue}>{fmt(salesAnalytics.yillik)}</div></Card>
+      </div>
+      <Card th={th} style={{ marginBottom: 14 }}><div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.sotuvGrafigi}</div><LineChartComp data={monthlyTrend} th={th} label={t.jamiSumma} ariaLabel={t.sotuvGrafigi} /></Card>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14 }}>
+        <Card th={th}>
+          <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.kopSotilgan}</div>
+          {salesAnalytics.topMahsulotlar.length ? <HBarChartComp data={salesAnalytics.topMahsulotlar} colors={PIE_COLORS} id={t.kopSotilgan} th={th} /> : <div style={{ fontSize: 13, color: th.textSecondary }}>—</div>}
+        </Card>
+        <Card th={th}>
+          <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.kopSavdoXodim}</div>
+          {salesAnalytics.topXodimlar.length ? <Table th={th} headers={[t.sotuvchi, t.summa]} rows={salesAnalytics.topXodimlar.map((x) => [x.name, fmt(x.value)])} /> : <div style={{ fontSize: 13, color: th.textSecondary }}>—</div>}
+        </Card>
+        <Card th={th}>
+          <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.sofFoyda}</div>
+          <div style={Object.assign({}, cardValue, { color: sofFoyda >= 0 ? th.green : th.red, fontSize: 26, marginBottom: 6 })}>{fmt(sofFoyda)}</div>
+          <div style={{ fontSize: 12, color: th.textSecondary }}>{t.umumiyBalans}: {fmt(umumiyBalans)} · {t.xarajatlar}: {fmt(xarajatJami)}</div>
+        </Card>
+        <Card th={th}>
+          <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.qarzdorlik}</div>
+          <div style={Object.assign({}, cardValue, { fontSize: 26, marginBottom: 10 })}>{fmt(qarzdorlikJami)}</div>
+          {qarzPerPartner.length ? <Table th={th} headers={[t.hamkor, t.summa]} rows={qarzPerPartner.map((q) => [q.hamkor, fmt(q.qoldiq)])} /> : <div style={{ fontSize: 13, color: th.textSecondary }}>—</div>}
+        </Card>
+      </div>
+    </div>);
+  }
+
+  function renderXabarlar() {
+    return (<div><SectionHeader th={th} title={t.xabarlar} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14, marginBottom: 14 }}>
+        <Card th={th}>
+          <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.bizningQarzlarimiz}</div>
+          {qarzPerPartner.length ? <Table th={th} headers={[t.hamkor, t.summa]} rows={qarzPerPartner.map((q) => [q.hamkor, fmt(q.qoldiq)])} /> : <div style={{ fontSize: 13, color: th.textSecondary }}>—</div>}
+        </Card>
+        <Card th={th}>
+          <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.hamkorQarzlari}</div>
+          {mijozQarziPer.length ? <Table th={th} headers={[t.hamkor, t.summa]} rows={mijozQarziPer.map((q) => [q.hamkor, fmt(q.qoldiq)])} /> : <div style={{ fontSize: 13, color: th.textSecondary }}>—</div>}
+        </Card>
+      </div>
+      <Card th={th}>
+      {messages.slice().reverse().map((m) => (<div key={m.id} onClick={() => setMessages(messages.map((x) => x.id === m.id ? Object.assign({}, x, { oqilgan: true }) : x))}
+        style={{ display: "flex", gap: 10, padding: "12px 0", borderBottom: "1px solid " + th.borderSoft, cursor: "pointer", alignItems: "center" }}>
+        <Icon name={m.oqilgan ? "check" : "circle"} size={16} color={m.oqilgan ? th.textSecondary : th.red} />
+        <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: m.oqilgan ? 400 : 600, color: th.text }}>{m.matn}</div><div style={{ fontSize: 12, color: th.textSecondary }}>{m.sana} · {m.oqilgan ? t.oqilgan : t.oqilmagan}</div></div>
+        <button style={iconBtn} onClick={(e) => { e.stopPropagation(); openEditModal("message", m); }}><Icon name="edit" size={14} /></button>
+      </div>))}
+    </Card></div>);
+  }
+
+  function renderOtkazmalar() {
+    const sel = getSelect("otkazmalar");
+    return (<div>
+      <SectionHeader th={th} title={t.otkazmalar} actions={<><SelectButtons section="otkazmalar" th={th} t={t} sel={getSelect("otkazmalar")} onToggleMode={() => toggleSelectMode("otkazmalar")} onDelete={() => deleteSelected("otkazmalar")} /><button style={btnGhost} onClick={() => handlePickExcel("otkazmalar")}><Icon name="upload" size={14} />{t.hujjatYuklash}</button><button style={btnPrimary} onClick={() => openModal("transfer", { hamkor: clientNames[0] || "" })}>{t.qoshish}</button></>} />
+      <ConnectPanel section="otkazmalar" th={th} t={t} cs={getConnect("otkazmalar")} onUrlChange={(v) => updateConnect("otkazmalar", { url: v })} onConnect={() => handleConnectSheets("otkazmalar")} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
+        <Card th={th}><div style={cardLabel}>{t.jamiKirim}</div><div style={Object.assign({}, cardValue, { color: th.green })}>{fmt(bankKirimJami)}</div></Card>
+        <Card th={th}><div style={cardLabel}>{t.jamiChiqim}</div><div style={Object.assign({}, cardValue, { color: th.red })}>{fmt(bankChiqimJami)}</div></Card>
+        <Card th={th}><div style={cardLabel}>{t.joriyQoldiq}</div><div style={cardValue}>{fmt(bankBalans)}</div></Card>
+      </div>
+      <Card th={th}><Table th={th} headers={[t.no, t.sana, t.hamkor, t.hisobRaqam, t.mfo, t.chiqim, t.kirimSoz, t.izoh, t.amal]}
+        items={transfersComputed} selection={sel} onToggle={(id) => toggleSelectRow("otkazmalar", id)}
+        rows={transfersComputed.map((tr, i) => [i + 1, tr.sana, tr.hamkor, tr.hisob, tr.mfo, tr.chiqim ? fmt(tr.chiqim) : "-", tr.kirim ? fmt(tr.kirim) : "-", tr.izoh, tr.computed ? null : <button key={"e" + tr.id} style={iconBtn} onClick={() => openEditModal("transfer", tr)}><Icon name="edit" size={14} /></button>])} /></Card>
+    </div>);
+  }
+
+  function renderKassa() {
+    return (<div>
+      <SectionHeader th={th} title={t.kassa} actions={<>
+        <button style={btnGhost} onClick={() => openModal("clientDebtPayment", { hamkor: (mijozQarziPer[0] && mijozQarziPer[0].hamkor) || "" })}>{t.mijozdanYigish}</button>
+        <button style={btnGhost} onClick={() => openModal("kassaBank")}>{t.kassadanBank}</button>
+        <button style={btnPrimary} onClick={() => openModal("kassaManual")}>{t.qoshish}</button>
+      </>} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
+        <Card th={th}>
+          <div style={cardLabel}>{t.boshlangichQoldiq}</div>
+          <input type="number" value={kassaInitial} onChange={(e) => { const v = Number(e.target.value) || 0; setKassaInitial(v); persistAll({ kassaInitial: v }); }}
+            style={{ width: "100%", padding: "6px 8px", borderRadius: 8, border: "1px solid " + th.border, background: th.inputBg, color: th.text, fontSize: 18, fontWeight: 600 }} />
+        </Card>
+        <Card th={th}><div style={cardLabel}>{t.jamiKirim}</div><div style={Object.assign({}, cardValue, { color: th.green })}>{fmt(kassaKirimJami)}</div></Card>
+        <Card th={th}><div style={cardLabel}>{t.jamiChiqim}</div><div style={Object.assign({}, cardValue, { color: th.red })}>{fmt(kassaChiqimJami)}</div></Card>
+        <Card th={th}><div style={cardLabel}>{t.joriyQoldiq}</div><div style={cardValue}>{fmt(kassaQoldiq)}</div></Card>
+      </div>
+      <Card th={th}>
+        <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.kassaOperatsiyalari}</div>
+        <Table th={th} headers={[t.sana, t.turi, t.summa, t.izoh]}
+          rows={kassaOps.map((o) => [o.sana, o.turi === "kirim" ? t.kirimSoz : t.chiqim, <span key={o.id} style={{ color: o.turi === "kirim" ? th.green : th.red, fontWeight: 500 }}>{(o.turi === "kirim" ? "+" : "-") + fmt(o.summa)}</span>, o.izoh])} />
+      </Card>
+    </div>);
+  }
+
+  function renderMijozlar() {
+    const sel = getSelect("mijozlar");
+    return (<div>
+      <SectionHeader th={th} title={t.mijozlar} actions={<><SelectButtons section="mijozlar" th={th} t={t} sel={getSelect("mijozlar")} onToggleMode={() => toggleSelectMode("mijozlar")} onDelete={() => deleteSelected("mijozlar")} /><button style={btnGhost} onClick={() => handlePickExcel("mijozlar")}><Icon name="upload" size={14} />{t.hujjatYuklash}</button><button style={btnPrimary} onClick={() => openModal("client")}>{t.qoshish}</button></>} />
+      <ConnectPanel section="mijozlar" th={th} t={t} cs={getConnect("mijozlar")} onUrlChange={(v) => updateConnect("mijozlar", { url: v })} onConnect={() => handleConnectSheets("mijozlar")} />
+      <Card th={th}><Table th={th} headers={[t.ism, t.inn, t.manzil, t.izoh, t.amal]} items={clients} selection={sel} onToggle={(id) => toggleSelectRow("mijozlar", id)}
+        rows={clients.map((c) => [c.ism, c.inn, c.manzil, c.izoh, <button key={"e" + c.id} style={iconBtn} onClick={() => openEditModal("client", c)}><Icon name="edit" size={14} /></button>])} /></Card>
+    </div>);
+  }
+
+  function renderXodimlar() {
+    const sel = getSelect("xodimlar");
+    return (<div>
+      <SectionHeader th={th} title={t.xodimlar} actions={<>
+        <SelectButtons section="xodimlar" th={th} t={t} sel={getSelect("xodimlar")} onToggleMode={() => toggleSelectMode("xodimlar")} onDelete={() => deleteSelected("xodimlar")} />
+        <button style={btnGhost} onClick={() => handlePickExcel("xodimlar")}><Icon name="upload" size={14} />{t.hujjatYuklash}</button>
+        <button style={btnPrimary} onClick={() => openModal("employee")}>{t.yangiXodim}</button>
+      </>} />
+      <ConnectPanel section="xodimlar" th={th} t={t} cs={getConnect("xodimlar")} onUrlChange={(v) => updateConnect("xodimlar", { url: v })} onConnect={() => handleConnectSheets("xodimlar")} />
+      <Card th={th} style={{ marginBottom: 14, maxWidth: 260 }}><div style={cardLabel}>{t.oylikFondi}</div><div style={cardValue}>{fmt(oylikJamiAll)}</div></Card>
+      <Card th={th}><Table th={th} headers={[t.fio, t.lavozim, t.telefon, t.xodimManzil, t.jinsi, t.oylikMaosh, t.amal]}
+        items={employees} selection={sel} onToggle={(id) => toggleSelectRow("xodimlar", id)}
+        rows={employees.map((e) => [e.fio, e.lavozim, e.telefon || "-", e.manzil || "-", e.jins === "Ayol" ? t.ayol : t.erkak, fmt(e.oylik), <button key={"e" + e.id} style={iconBtn} onClick={() => openEditModal("employee", e)}><Icon name="edit" size={14} /></button>])} /></Card>
+    </div>);
+  }
+
+  function renderKirim() {
+    const sel = getSelect("kirim");
+    return (<div>
+      <SectionHeader th={th} title={t.kirim} actions={<><SelectButtons section="kirim" th={th} t={t} sel={getSelect("kirim")} onToggleMode={() => toggleSelectMode("kirim")} onDelete={() => deleteSelected("kirim")} /><button style={btnGhost} onClick={() => handlePickExcel("kirim")}><Icon name="upload" size={14} />{t.hujjatYuklash}</button><button style={btnPrimary} onClick={() => openModal("income", { hamkor: clientNames[0] || "", tolov: "Bank", holat: "Pulga olingan" })}>{t.qoshish}</button></>} />
+      <ConnectPanel section="kirim" th={th} t={t} cs={getConnect("kirim")} onUrlChange={(v) => updateConnect("kirim", { url: v })} onConnect={() => handleConnectSheets("kirim")} />
+      <Card th={th}><Table th={th} headers={[t.sana, t.mahsulotXizmat, t.hamkor, t.miqdor, t.narx, t.qqs12, t.narxQqs, t.jamiSumma, t.tolovTuri, t.holat, t.amal]}
+        items={income} selection={sel} onToggle={(id) => toggleSelectRow("kirim", id)}
+        rows={income.map((r) => { const qqs = r.narx * 0.12; const narxQqs = r.narx + qqs; const holatText = r.holat === "Qarzga olingan" ? t.qarzgaOlingan : t.pulgaOlingan; const holatColor = r.holat === "Qarzga olingan" ? th.red : th.green; const tolovText = r.tolov === "Naxt" ? t.naxt : r.tolov === "Bank" ? t.bank : "—"; return [r.sana, r.nomi, r.hamkor, r.miqdor, fmt(r.narx), fmt(qqs), fmt(narxQqs), fmt(r.miqdor * narxQqs), tolovText, <span key={"h" + r.id} style={{ color: holatColor, fontWeight: 500 }}>{holatText}</span>, <button key={"e" + r.id} style={iconBtn} onClick={() => openEditModal("income", r)}><Icon name="edit" size={14} /></button>]; })} /></Card>
+    </div>);
+  }
+
+  function renderOmbor() {
+    return (<div>
+      <SectionHeader th={th} title={t.ombor} actions={<><button style={btnGhost} onClick={() => handlePickExcel("ombor")}><Icon name="upload" size={14} />{t.hujjatYuklash}</button><button style={btnPrimary} onClick={() => openModal("warehouse", { mahsulot: kirimMahsulotlar[0] || "" })}>{t.qoshish}</button></>} />
+      <ConnectPanel section="ombor" th={th} t={t} cs={getConnect("ombor")} onUrlChange={(v) => updateConnect("ombor", { url: v })} onConnect={() => handleConnectSheets("ombor")} />
+      <Card th={th}><Table th={th} headers={[t.mahsulot, t.jamiKirim, t.sotildi, t.qoldiq]} rows={omborComputed.map((w) => [w.mahsulot, fmt(w.jamiKirim), fmt(w.sotildi), fmt(w.jamiKirim - w.sotildi)])} /></Card>
+    </div>);
+  }
+
+  function renderXarajatlar() {
+    const sel = getSelect("xarajatlar");
+    return (<div>
+      <SectionHeader th={th} title={t.xarajatlar} actions={<><SelectButtons section="xarajatlar" th={th} t={t} sel={getSelect("xarajatlar")} onToggleMode={() => toggleSelectMode("xarajatlar")} onDelete={() => deleteSelected("xarajatlar")} /><button style={btnGhost} onClick={() => handlePickExcel("xarajatlar")}><Icon name="upload" size={14} />{t.hujjatYuklash}</button><button style={btnPrimary} onClick={() => openModal("expense")}>{t.qoshish}</button></>} />
+      <ConnectPanel section="xarajatlar" th={th} t={t} cs={getConnect("xarajatlar")} onUrlChange={(v) => updateConnect("xarajatlar", { url: v })} onConnect={() => handleConnectSheets("xarajatlar")} />
+      <Card th={th}><Table th={th} headers={[t.sana, t.xarajatNomi, t.miqdori, t.narxi, t.tolovTuri, t.izoh, t.amal]} items={expenses} selection={sel} onToggle={(id) => toggleSelectRow("xarajatlar", id)}
+        rows={expenses.map((e) => [e.sana, e.nomi, e.miqdor, fmt(e.narx), (e.hisob || "Naxt") === "Naxt" ? t.naxt : t.bank, e.izoh || "-", <button key={"e" + e.id} style={iconBtn} onClick={() => openEditModal("expense", e)}><Icon name="edit" size={14} /></button>])} /></Card>
+    </div>);
+  }
+
+  function renderTashkilot() {
+    const sel = getSelect("tashkilot");
+    return (<div>
+      <SectionHeader th={th} title={t.tashkilot} actions={<><SelectButtons section="tashkilot" th={th} t={t} sel={sel} onToggleMode={() => toggleSelectMode("tashkilot")} onDelete={() => deleteSelected("tashkilot")} /><button style={btnPrimary} onClick={() => openModal("org")}>{t.qoshish}</button></>} />
+      {orgs.length ? (
+        <Card th={th}>
+          <Table th={th} headers={[t.tashkilotNomi, t.stir, t.bankNomi, t.telefonOrg, t.rahbar, t.amal]}
+            items={orgs} selection={sel} onToggle={(id) => toggleSelectRow("tashkilot", id)}
+            rows={orgs.map((o) => [o.nomi, o.stir || "-", o.bankNomi || "-", o.telefon || "-", o.rahbar || "-", <button key={"e" + o.id} style={iconBtn} onClick={() => openEditModal("org", o)}><Icon name="edit" size={14} /></button>])} />
+        </Card>
+      ) : (
+        <Card th={th}><div style={{ fontSize: 13, color: th.textSecondary }}>—</div></Card>
+      )}
+    </div>);
+  }
+
+  function renderSozlamalar() {
+    return (<div>
+      <SectionHeader th={th} title={t.sozlamalar} />
+      <Card th={th} style={{ marginBottom: 14 }}>
+        <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.til}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => { setLang("uz"); persistAll({ lang: "uz" }); }} style={lang === "uz" ? btnPrimary : btnGhost}>{t.uzbek}</button>
+          <button onClick={() => { setLang("ru"); persistAll({ lang: "ru" }); }} style={lang === "ru" ? btnPrimary : btnGhost}>{t.rus}</button>
+        </div>
+      </Card>
+      <Card th={th} style={{ marginBottom: 14 }}>
+        <div style={{ fontWeight: 600, marginBottom: 10, color: th.text }}>{t.korinish}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => { setThemeName("light"); persistAll({ themeName: "light" }); }} style={theme === "light" ? btnPrimary : btnGhost}><Icon name="sun" size={14} />{t.yorugRejim}</button>
+          <button onClick={() => { setThemeName("dark"); persistAll({ themeName: "dark" }); }} style={theme === "dark" ? btnPrimary : btnGhost}><Icon name="moon" size={14} />{t.tunRejim}</button>
+        </div>
+      </Card>
+      <Card th={th} style={{ marginBottom: 14 }}>
+        <div style={{ fontWeight: 600, marginBottom: 6, color: th.text }}>{t.dashboard}</div>
+        <div style={{ fontSize: 13, color: th.textSecondary }}>{t.tartibHint}</div>
+      </Card>
+      <div style={{ marginTop: 10 }}>
+        <button onClick={() => openModal("clearAll")} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid " + th.borderSoft, background: "transparent", color: th.textSecondary, fontSize: 12, cursor: "pointer" }}>
+          {t.tozalash}
+        </button>
+      </div>
+    </div>);
+  }
+
+  const PAGES = { dashboard: renderDashboard, sotuv: renderSotuv, tahlil: renderTahlil, xabarlar: renderXabarlar, otkazmalar: renderOtkazmalar, kassa: renderKassa, mijozlar: renderMijozlar, xodimlar: renderXodimlar, kirim: renderKirim, ombor: renderOmbor, xarajatlar: renderXarajatlar, tashkilot: renderTashkilot, sozlamalar: renderSozlamalar };
+
+  function renderModalBody() {
+    if (!modal) return null;
+    const f = modal.form;
+    const set = (k) => (v) => setForm({ [k]: v });
+    if (modal.type === "clearAll") return (<>
+      <div style={{ fontSize: 13, color: th.textSecondary, marginBottom: 10 }}>{t.tozalashTasdiq}</div>
+      <Field label={t.parol} value={f.password || ""} onChange={set("password")} type="password" theme={th} />
+      {clearError && <div style={{ fontSize: 12, color: th.red, marginBottom: 6 }}>{clearError}</div>}
+    </>);
+    if (modal.type === "employee") return (<>
+      <Field label={t.fio} value={f.fio || ""} onChange={set("fio")} theme={th} />
+      <Field label={t.lavozim} value={f.lavozim || ""} onChange={set("lavozim")} theme={th} />
+      <Field label={t.telefon} value={f.telefon || ""} onChange={set("telefon")} theme={th} />
+      <Field label={t.xodimManzil} value={f.manzil || ""} onChange={set("manzil")} theme={th} />
+      <Field label={t.jinsi} value={f.jins || "Erkak"} onChange={set("jins")} type="select" theme={th} options={[{ value: "Erkak", label: t.erkak }, { value: "Ayol", label: t.ayol }]} />
+      <Field label={t.oylikMaosh} value={f.oylik || ""} onChange={set("oylik")} type="number" theme={th} />
+    </>);
+    if (modal.type === "client") return (<>
+      <Field label={t.ism} value={f.ism || ""} onChange={set("ism")} theme={th} />
+      <Field label={t.inn} value={f.inn || ""} onChange={set("inn")} theme={th} />
+      <Field label={t.manzil} value={f.manzil || ""} onChange={set("manzil")} theme={th} />
+      <Field label={t.izoh} value={f.izoh || ""} onChange={set("izoh")} theme={th} />
+    </>);
+    if (modal.type === "org") return (<>
+      <Field label={t.tashkilotNomi} value={f.nomi || ""} onChange={set("nomi")} theme={th} />
+      <Field label={t.stir} value={f.stir || ""} onChange={set("stir")} theme={th} />
+      <Field label={t.mfoOrg} value={f.mfo || ""} onChange={set("mfo")} theme={th} />
+      <Field label={t.hisobRaqamOrg} value={f.hisobRaqam || ""} onChange={set("hisobRaqam")} theme={th} />
+      <Field label={t.bankNomi} value={f.bankNomi || ""} onChange={set("bankNomi")} theme={th} />
+      <Field label={t.orgInn} value={f.inn || ""} onChange={set("inn")} theme={th} />
+      <Field label={t.oked} value={f.oked || ""} onChange={set("oked")} theme={th} />
+      <Field label={t.manzilOrg} value={f.manzil || ""} onChange={set("manzil")} theme={th} />
+      <Field label={t.telefonOrg} value={f.telefon || ""} onChange={set("telefon")} theme={th} />
+      <Field label={t.emailOrg} value={f.email || ""} onChange={set("email")} theme={th} />
+      <Field label={t.rahbar} value={f.rahbar || ""} onChange={set("rahbar")} theme={th} />
+      <Field label={t.boshHisobchi} value={f.hisobchi || ""} onChange={set("hisobchi")} theme={th} />
+    </>);
+    if (modal.type === "sale") return (<>
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+      <Field label={t.mahsulotXizmat} value={f.nomi || (kirimMahsulotlar[0] || "")} onChange={set("nomi")} type={kirimMahsulotlar.length ? "select" : "text"} theme={th}
+        options={kirimMahsulotlar.length ? kirimMahsulotlar.map((m) => ({ value: m, label: m })) : [{ value: "", label: t.kirimYoq }]} />
+      <Field label={t.miqdor} value={f.miqdor || ""} onChange={set("miqdor")} type="number" theme={th} />
+      <Field label={t.narx} value={f.narx || ""} onChange={set("narx")} type="number" theme={th} />
+      <Field label={t.tolovTuri} value={f.tolov || "Naxt"} onChange={set("tolov")} type="select" theme={th} options={[{ value: "Naxt", label: t.naxt }, { value: "Bank", label: t.bank }, { value: "Qarz", label: t.qarz }]} />
+      {f.tolov === "Qarz" && <Field label={t.hamkor} value={f.hamkor || (clientNames[0] || "")} onChange={set("hamkor")} type={clientNames.length ? "select" : "text"} theme={th}
+        options={clientNames.length ? clientNames.map((c) => ({ value: c, label: c })) : [{ value: "", label: t.mijozYoq }]} />}
+      <Field label={t.sotuvchi} value={f.xodim || (employees[0] && employees[0].fio) || ""} onChange={set("xodim")} type={employees.length ? "select" : "text"} theme={th}
+        options={employees.length ? employees.map((e) => ({ value: e.fio, label: e.fio })) : [{ value: "", label: "-" }]} />
+    </>);
+    if (modal.type === "income") return (<>
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+      <Field label={t.mahsulotXizmat} value={f.nomi || ""} onChange={set("nomi")} theme={th} />
+      <Field label={t.hamkor} value={f.hamkor || (clientNames[0] || "")} onChange={set("hamkor")} type={clientNames.length ? "select" : "text"} theme={th}
+        options={clientNames.length ? clientNames.map((c) => ({ value: c, label: c })) : [{ value: "", label: t.mijozYoq }]} />
+      <Field label={t.miqdor} value={f.miqdor || ""} onChange={set("miqdor")} type="number" theme={th} />
+      <Field label={t.narx} value={f.narx || ""} onChange={set("narx")} type="number" theme={th} />
+      <Field label={t.holat} value={f.holat || "Pulga olingan"} onChange={(v) => setForm({ holat: v, tolov: v === "Qarzga olingan" ? "" : (f.tolov || "Bank") })} type="select" theme={th}
+        options={[{ value: "Pulga olingan", label: t.pulgaOlingan }, { value: "Qarzga olingan", label: t.qarzgaOlingan }]} />
+      {f.holat === "Qarzga olingan"
+        ? <div style={{ fontSize: 12, color: th.textSecondary, marginBottom: 10 }}>{t.tolovTuri}: — ({t.qarzgaOlingan})</div>
+        : <Field label={t.tolovTuri} value={f.tolov || "Bank"} onChange={set("tolov")} type="select" theme={th} options={[{ value: "Bank", label: t.bank }, { value: "Naxt", label: t.naxt }]} />}
+    </>);
+    if (modal.type === "expense") return (<>
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+      <Field label={t.xarajatNomi} value={f.nomi || ""} onChange={set("nomi")} theme={th} />
+      <Field label={t.miqdori} value={f.miqdor || "1"} onChange={set("miqdor")} type="number" theme={th} />
+      <Field label={t.narxi} value={f.narx || ""} onChange={set("narx")} type="number" theme={th} />
+      <Field label={t.tolovTuri} value={f.hisob || "Naxt"} onChange={set("hisob")} type="select" theme={th} options={[{ value: "Naxt", label: t.naxt }, { value: "Bank", label: t.bank }]} />
+      <Field label={t.izoh} value={f.izoh || ""} onChange={set("izoh")} theme={th} />
+    </>);
+    if (modal.type === "transfer") return (<>
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+      <Field label={t.hamkor} value={f.hamkor || (clientNames[0] || "")} onChange={set("hamkor")} type={clientNames.length ? "select" : "text"} theme={th}
+        options={clientNames.length ? clientNames.map((c) => ({ value: c, label: c })) : [{ value: "", label: t.mijozYoq }]} />
+      {(() => { const q = qarzPerPartner.find((x) => x.hamkor === f.hamkor); return q ? (
+        <div style={{ background: th.red + "18", border: "1px solid " + th.red, borderRadius: 8, padding: "8px 12px", marginBottom: 10, fontSize: 13, color: th.text }}>
+          {f.hamkor}: {t.joriyQoldiq} — <b>{fmt(q.qoldiq)}</b>
+        </div>
+      ) : null; })()}
+      <Field label={t.hisobRaqam} value={f.hisob || ""} onChange={set("hisob")} theme={th} />
+      <Field label={t.mfo} value={f.mfo || ""} onChange={set("mfo")} theme={th} />
+      <Field label={t.kirimSoz} value={f.kirim || "0"} onChange={set("kirim")} type="number" theme={th} />
+      <Field label={t.chiqim} value={f.chiqim || "0"} onChange={set("chiqim")} type="number" theme={th} />
+      <Field label={t.izoh} value={f.izoh || ""} onChange={set("izoh")} theme={th} />
+    </>);
+    if (modal.type === "warehouse") return (<>
+      <Field label={t.mahsulot} value={f.mahsulot || (kirimMahsulotlar[0] || "")} onChange={set("mahsulot")} type={kirimMahsulotlar.length ? "select" : "text"} theme={th}
+        options={kirimMahsulotlar.length ? kirimMahsulotlar.map((m) => ({ value: m, label: m })) : [{ value: "", label: t.kirimYoq }]} />
+      <Field label={t.jamiKirim} value={f.jamiKirim || ""} onChange={set("jamiKirim")} type="number" theme={th} />
+      <Field label={t.sotildi} value={f.sotildi || ""} onChange={set("sotildi")} type="number" theme={th} />
+    </>);
+    if (modal.type === "message") return (<>
+      <Field label={t.izoh} value={f.matn || ""} onChange={set("matn")} type="textarea" theme={th} />
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+    </>);
+    if (modal.type === "clientDebtPayment") return (<>
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+      <Field label={t.hamkor} value={f.hamkor || (mijozQarziPer[0] && mijozQarziPer[0].hamkor) || ""} onChange={set("hamkor")} type="select" theme={th}
+        options={mijozQarziPer.length ? mijozQarziPer.map((q) => ({ value: q.hamkor, label: q.hamkor + " (" + fmt(q.qoldiq) + ")" })) : [{ value: "", label: t.mijozYoq }]} />
+      <Field label={t.summa} value={f.summa || ""} onChange={set("summa")} type="number" theme={th} />
+    </>);
+    if (modal.type === "kassaBank") return (<>
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+      <Field label={t.summa} value={f.summa || ""} onChange={set("summa")} type="number" theme={th} />
+      <Field label={t.izohIxtiyoriy} value={f.izoh || ""} onChange={set("izoh")} theme={th} />
+    </>);
+    if (modal.type === "kassaManual") return (<>
+      <Field label={t.sana} value={f.sana || ""} onChange={set("sana")} type="date" theme={th} />
+      <Field label={t.turi} value={f.turi || "kirim"} onChange={set("turi")} type="select" theme={th} options={[{ value: "kirim", label: t.kirimSoz }, { value: "chiqim", label: t.chiqim }]} />
+      <Field label={t.summa} value={f.summa || ""} onChange={set("summa")} type="number" theme={th} />
+      {f.turi === "chiqim" && <Field label={t.kimgaToifa} value={f.kimgaTuri || "mijoz"} onChange={(v) => setForm({ kimgaTuri: v, hamkor: "" })} type="select" theme={th}
+        options={[{ value: "mijoz", label: t.mijoz }, { value: "tashkilot", label: t.tashkilot }]} />}
+      {f.turi === "chiqim" && (f.kimgaTuri || "mijoz") === "mijoz" && <Field label={t.hamkor} value={f.hamkor || ""} onChange={set("hamkor")} type={clientNames.length ? "select" : "text"} theme={th}
+        options={[{ value: "", label: "-" }].concat(clientNames.map((c) => ({ value: c, label: c })))} />}
+      {f.turi === "chiqim" && f.kimgaTuri === "tashkilot" && <Field label={t.tashkilot} value={f.hamkor || ""} onChange={set("hamkor")} type={orgs.length ? "select" : "text"} theme={th}
+        options={[{ value: "", label: "-" }].concat(orgs.map((o) => ({ value: o.nomi, label: o.nomi })))} />}
+      {(() => { const q = qarzPerPartner.find((x) => x.hamkor === f.hamkor); return f.turi === "chiqim" && (f.kimgaTuri || "mijoz") === "mijoz" && q ? (
+        <div style={{ background: th.red + "18", border: "1px solid " + th.red, borderRadius: 8, padding: "8px 12px", marginBottom: 10, fontSize: 13, color: th.text }}>
+          {f.hamkor}: {t.joriyQoldiq} — <b>{fmt(q.qoldiq)}</b>
+        </div>
+      ) : null; })()}
+      <Field label={t.izohIxtiyoriy} value={f.izoh || ""} onChange={set("izoh")} theme={th} />
+    </>);
+    return null;
+  }
+
+  const modalTitles = { employee: t.yangiXodim, client: t.mijozlar, org: t.tashkilot, sale: t.sotuv, income: t.kirim, expense: t.xarajatlar, transfer: t.otkazmalar, warehouse: t.ombor, message: t.xabarlar, clientDebtPayment: t.mijozdanYigish, kassaBank: t.kassadanBank, kassaManual: t.yangiOperatsiya, clearAll: t.tozalash };
+  const modalTitle = modal ? (modal.editId ? t.tahrirlash + " — " + modalTitles[modal.type] : modalTitles[modal.type]) : "";
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", background: th.page, fontFamily: "inherit", color: th.text }}>
+      <div style={{ width: 220, background: th.sidebar, borderRight: "1px solid " + th.border, padding: "20px 12px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 8px 20px" }}>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: "#1D3A5F", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14 }}>HB</div>
+          <div><div style={{ fontWeight: 600, fontSize: 14, color: th.text }}>{t.company}</div><div style={{ fontSize: 11, color: th.textSecondary }}>{t.subtitle}</div></div>
+        </div>
+        {navOrder.map((key, idx) => {
+          const item = NAV.find((n) => n.key === key);
+          if (!item) return null;
+          return (
+            <div key={key} draggable onDragStart={() => handleDragStart(idx)} onDragOver={handleDragOver} onDrop={() => handleDrop(idx)}
+              onClick={() => setPage(key)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, cursor: "grab", marginBottom: 2, fontSize: 14,
+                background: page === key ? th.navActiveBg : "transparent", color: page === key ? th.navActiveText : th.text, fontWeight: page === key ? 500 : 400 }}>
+              <Icon name={item.icon} size={17} />{t[key]}
+              {key === "xabarlar" && unreadCount > 0 && <span style={Object.assign({}, badge, { marginLeft: "auto" })}>{unreadCount}</span>}
+            </div>
+          );
+        })}
+        {onLogout && (
+          <div onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, cursor: "pointer", marginTop: 14, fontSize: 14, color: th.red, borderTop: "1px solid " + th.borderSoft, paddingTop: 16 }}>
+            <Icon name="logout" size={17} />{t.chiqish}
+          </div>
+        )}
+      </div>
+      <div style={{ flex: 1, padding: "24px 32px", overflowX: "hidden" }}>{PAGES[page]()}</div>
+      <input type="file" ref={fileInputRef} style={{ display: "none" }} accept=".csv,.xlsx,.xls" onChange={handleFileChosen} />
+      {toast && <div style={{ position: "fixed", bottom: 24, right: 24, background: th.text, color: th.page, padding: "10px 18px", borderRadius: 8, fontSize: 13, zIndex: 60 }}>{toast}</div>}
+      {modal && (<Modal title={modalTitle} onClose={closeModal} theme={th}>
+        {renderModalBody()}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
+          <button style={btnGhost} onClick={closeModal}>{t.bekorQilish}</button>
+          <button style={modal.type === "clearAll" ? { padding: "9px 16px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer", background: th.red, color: "#fff" } : btnGreen} onClick={submitModal}>{modal.type === "clearAll" ? t.tanlanganlarniOchirish : t.saqlash}</button>
+        </div>
+      </Modal>)}
+    </div>
+  );
+}
+
+const AUTH_KEY = "hisobot_auth_v1";
+const SESSION_KEY = "hisobot_session_v1";
+
+async function hashPassword(password, salt) {
+  const enc = new TextEncoder();
+  const data = enc.encode(salt + ":" + password);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function AuthGate() {
+  const [account, setAccount] = useState(() => { try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (e) { return null; } });
+  const [loggedIn, setLoggedIn] = useState(() => { try { return sessionStorage.getItem(SESSION_KEY) === "1"; } catch (e) { return false; } });
+  const [form, setForm] = useState({});
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [mode, setMode] = useState("auto"); // auto | recover | reset
+  const isRegister = !account;
+  const screen = isRegister ? "register" : (mode === "auto" ? "login" : mode);
+
+  function upd(patch) { setForm(Object.assign({}, form, patch)); setError(""); }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    if (screen === "register") {
+      if (!form.username || !form.password || !form.password2 || !form.recovery) { setError(DICT.uz.maydonTold); return; }
+      if (form.password !== form.password2) { setError(DICT.uz.parolMos); return; }
+      const salt = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const hash = await hashPassword(form.password, salt);
+      const rSalt = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const rHash = await hashPassword(form.recovery.trim().toLowerCase(), rSalt);
+      const acc = { username: form.username, hash, salt, rHash, rSalt };
+      try { localStorage.setItem(AUTH_KEY, JSON.stringify(acc)); } catch (err) {}
+      try { sessionStorage.setItem(SESSION_KEY, "1"); } catch (err) {}
+      setAccount(acc);
+      setLoggedIn(true);
+    } else if (screen === "login") {
+      if (!form.username || !form.password) { setError(DICT.uz.maydonTold); return; }
+      const hash = await hashPassword(form.password, account.salt);
+      if (form.username === account.username && hash === account.hash) {
+        try { sessionStorage.setItem(SESSION_KEY, "1"); } catch (err) {}
+        setLoggedIn(true);
+      } else {
+        setError(DICT.uz.loginXato);
+      }
+    } else if (screen === "recover") {
+      if (!form.username || !form.recovery) { setError(DICT.uz.maydonTold); return; }
+      const rHash = await hashPassword(form.recovery.trim().toLowerCase(), account.rSalt);
+      if (form.username === account.username && account.rHash && rHash === account.rHash) {
+        setMode("reset");
+        setError("");
+      } else {
+        setError(DICT.uz.loginXato);
+      }
+    } else if (screen === "reset") {
+      if (!form.newPassword || !form.newPassword2) { setError(DICT.uz.maydonTold); return; }
+      if (form.newPassword !== form.newPassword2) { setError(DICT.uz.parolMos); return; }
+      const salt = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const hash = await hashPassword(form.newPassword, salt);
+      const acc = Object.assign({}, account, { hash, salt });
+      try { localStorage.setItem(AUTH_KEY, JSON.stringify(acc)); } catch (err) {}
+      setAccount(acc);
+      setMode("auto");
+      setForm({});
+      setInfo(DICT.uz.saqlandi);
+    }
+  }
+
+  function handleLogout() {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+    setLoggedIn(false);
+    setForm({});
+  }
+
+  if (loggedIn) return <App onLogout={handleLogout} />;
+
+  const titles = { register: DICT.uz.royxatdanOtish, login: DICT.uz.kirish, recover: "Parolni tiklash", reset: "Yangi parol o'rnatish" };
+  const subtitles = { register: DICT.uz.hisobYarating, login: "Hisobot baza tizimiga kirish", recover: "Login va maxfiy javobingizni kiriting", reset: "Yangi parolingizni kiriting" };
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F5F4F0", fontFamily: "inherit" }}>
+      <form onSubmit={handleSubmit} style={{ width: 320, background: "#fff", borderRadius: 12, padding: 28, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+        <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 4, color: "#26241F" }}>{titles[screen]}</div>
+        <div style={{ fontSize: 12, color: "#78766E", marginBottom: 18 }}>{subtitles[screen]}</div>
+
+        {(screen === "register" || screen === "login" || screen === "recover") && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#78766E", marginBottom: 4 }}>{DICT.uz.login}</div>
+            <input value={form.username || ""} onChange={(e) => upd({ username: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #E3E1D9", fontSize: 13 }} />
+          </div>
+        )}
+
+        {(screen === "register" || screen === "login") && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#78766E", marginBottom: 4 }}>{DICT.uz.parol}</div>
+            <input type="password" value={form.password || ""} onChange={(e) => upd({ password: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #E3E1D9", fontSize: 13 }} />
+          </div>
+        )}
+        {screen === "register" && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#78766E", marginBottom: 4 }}>{DICT.uz.parolTasdiqla}</div>
+            <input type="password" value={form.password2 || ""} onChange={(e) => upd({ password2: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #E3E1D9", fontSize: 13 }} />
+          </div>
+        )}
+        {screen === "register" && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#78766E", marginBottom: 4 }}>Maxfiy javob (parolni tiklash uchun, masalan: onangizning ismi)</div>
+            <input value={form.recovery || ""} onChange={(e) => upd({ recovery: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #E3E1D9", fontSize: 13 }} />
+          </div>
+        )}
+        {screen === "recover" && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#78766E", marginBottom: 4 }}>Maxfiy javob</div>
+            <input value={form.recovery || ""} onChange={(e) => upd({ recovery: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #E3E1D9", fontSize: 13 }} />
+          </div>
+        )}
+        {screen === "reset" && (<>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#78766E", marginBottom: 4 }}>Yangi parol</div>
+            <input type="password" value={form.newPassword || ""} onChange={(e) => upd({ newPassword: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #E3E1D9", fontSize: 13 }} />
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: "#78766E", marginBottom: 4 }}>{DICT.uz.parolTasdiqla}</div>
+            <input type="password" value={form.newPassword2 || ""} onChange={(e) => upd({ newPassword2: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #E3E1D9", fontSize: 13 }} />
+          </div>
+        </>)}
+
+        {error && <div style={{ fontSize: 12, color: "#B3341F", marginBottom: 10 }}>{error}</div>}
+        {info && !error && <div style={{ fontSize: 12, color: "#1D6B3B", marginBottom: 10 }}>{info}</div>}
+
+        <button type="submit" style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "#1D3A5F", color: "#fff", fontWeight: 500, fontSize: 14, cursor: "pointer" }}>
+          {titles[screen]}
+        </button>
+
+        {screen === "login" && (
+          <div style={{ textAlign: "center", marginTop: 14, fontSize: 12, color: "#1D3A5F", cursor: "pointer" }} onClick={() => { setMode("recover"); setForm({}); setError(""); setInfo(""); }}>
+            Login yoki parolni unutdingizmi?
+          </div>
+        )}
+        {(screen === "recover" || screen === "reset") && (
+          <div style={{ textAlign: "center", marginTop: 14, fontSize: 12, color: "#1D3A5F", cursor: "pointer" }} onClick={() => { setMode("auto"); setForm({}); setError(""); setInfo(""); }}>
+            {DICT.uz.kirish}
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 40, fontFamily: "sans-serif", color: "#26241F" }}>
+          <h2>Xatolik yuz berdi</h2>
+          <p>Sahifada kutilmagan xatolik chiqdi. Iltimos, sahifani qayta yuklang (F5).</p>
+          <button onClick={() => window.location.reload()} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#1D3A5F", color: "#fff", cursor: "pointer" }}>Qayta yuklash</button>
+          <pre style={{ marginTop: 20, whiteSpace: "pre-wrap", fontSize: 12, color: "#993C1D" }}>{String(this.state.error && this.state.error.message || this.state.error)}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><AuthGate /></ErrorBoundary>);
+</script>
+</body>
+</html>
